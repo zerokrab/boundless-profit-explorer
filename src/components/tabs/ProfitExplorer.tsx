@@ -91,7 +91,7 @@ export default function ProfitExplorer({ results, params, liveZkcPrice }: Props)
               >
                 <div className="w-px h-2 bg-amber-400" />
                 <span className="text-amber-400 font-mono whitespace-nowrap" style={{ fontSize: '10px' }}>
-                  Current Price: ${liveZkcPrice.toFixed(4)}
+                  ${liveZkcPrice.toFixed(4)}
                 </span>
               </div>
             );

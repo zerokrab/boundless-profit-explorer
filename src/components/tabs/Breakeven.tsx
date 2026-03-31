@@ -40,11 +40,11 @@ export default function Breakeven({ params, liveZkcPrice }: Props) {
       <div className="flex gap-4 mb-4 text-xs">
         <span className="flex items-center gap-1.5">
           <span className="w-3 h-3 rounded-sm inline-block bg-green-500"></span>
-          <span className="text-gray-400">Profitable at current price</span>
+          <span className="text-gray-400">Profitable</span>
         </span>
         <span className="flex items-center gap-1.5">
           <span className="w-3 h-3 rounded-sm inline-block bg-red-500"></span>
-          <span className="text-gray-400">Not profitable at current price</span>
+          <span className="text-gray-400">Not profitable</span>
         </span>
         {liveZkcPrice !== null && (
           <span className="flex items-center gap-1.5">
