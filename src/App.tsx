@@ -8,7 +8,7 @@ import ZkcTicker from './components/ZkcTicker';
 import ProfitExplorer from './components/tabs/ProfitExplorer';
 import Breakeven from './components/tabs/Breakeven';
 import Scenarios from './components/tabs/Scenarios';
-import { Menu, X } from 'lucide-react';
+import { Menu } from 'lucide-react';
 
 const DEFAULT_LOOKBACK = 10;
 
