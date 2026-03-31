@@ -1,17 +1,14 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { computeResults } from './lib/compute';
 import type { ModelParams } from './lib/compute';
 import { computePovwRate } from './lib/parseEpochs';
 import type { EpochData } from './lib/parseEpochs';
-import epochsRaw from './data/epochs.json';
 import Sidebar from './components/Sidebar';
 import ProfitExplorer from './components/tabs/ProfitExplorer';
 import Breakeven from './components/tabs/Breakeven';
 import Scenarios from './components/tabs/Scenarios';
 
-const epochs = epochsRaw as EpochData[];
 const DEFAULT_LOOKBACK = 10;
-const defaultPovw = computePovwRate(epochs, DEFAULT_LOOKBACK);
 
 const DEFAULT_PARAMS: ModelParams = {
   gpuConfigs: [
@@ -26,7 +23,7 @@ const DEFAULT_PARAMS: ModelParams = {
   market_reward_usd_per_bcycle: 0.07,
   market_order_util: 0.5,
   fixed_cost_monthly_usd: 0,
-  povw_zkc_per_mhz_per_epoch: defaultPovw,
+  povw_zkc_per_mhz_per_epoch: 0, // populated once epochs load
 };
 
 const TABS = ['Profit Explorer', 'Break-even', 'Scenarios'] as const;
@@ -36,6 +33,54 @@ export default function App() {
   const [params, setParams] = useState<ModelParams>(DEFAULT_PARAMS);
   const [lookback, setLookback] = useState(DEFAULT_LOOKBACK);
   const [activeTab, setActiveTab] = useState<Tab>('Profit Explorer');
+  const [epochs, setEpochs] = useState<EpochData[]>([]);
+  const [epochsLoading, setEpochsLoading] = useState(true);
+  const [epochsError, setEpochsError] = useState<string | null>(null);
+
+  // Fetch epoch data from Pages Function (falls back to bundled JSON in dev)
+  useEffect(() => {
+    const load = async () => {
+      setEpochsLoading(true);
+      setEpochsError(null);
+      try {
+        const res = await fetch('/api/epochs');
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const data: EpochData[] = await res.json();
+        setEpochs(data);
+        setParams(p => ({
+          ...p,
+          povw_zkc_per_mhz_per_epoch: computePovwRate(data, DEFAULT_LOOKBACK),
+        }));
+      } catch (err) {
+        // Fallback: load bundled epochs.json for local dev without wrangler
+        try {
+          const fallback = await import('./data/epochs.json');
+          const data = fallback.default as EpochData[];
+          setEpochs(data);
+          setParams(p => ({
+            ...p,
+            povw_zkc_per_mhz_per_epoch: computePovwRate(data, DEFAULT_LOOKBACK),
+          }));
+          setEpochsError('Using bundled epoch data (API unavailable)');
+        } catch {
+          setEpochsError('Failed to load epoch data');
+        }
+      } finally {
+        setEpochsLoading(false);
+      }
+    };
+    load();
+  }, []);
+
+  // Recompute POVW rate when lookback changes
+  useEffect(() => {
+    if (epochs.length > 0) {
+      setParams(p => ({
+        ...p,
+        povw_zkc_per_mhz_per_epoch: computePovwRate(epochs, lookback),
+      }));
+    }
+  }, [lookback, epochs]);
 
   const results = useMemo(() => computeResults(params), [params]);
 
@@ -58,28 +103,47 @@ export default function App() {
               onClick={() => setActiveTab(tab)}
               className={`px-4 py-3 text-sm font-medium transition-colors border-b-2 -mb-px ${
                 activeTab === tab
-                  ? 'text-cyan-400 border-cyan-500'
-                  : 'text-gray-400 border-transparent hover:text-gray-200'
+                  ? 'border-cyan-400 text-cyan-400'
+                  : 'border-transparent text-gray-400 hover:text-gray-200'
               }`}
             >
               {tab}
             </button>
           ))}
-          <div className="ml-auto text-xs text-gray-600 font-mono">
-            v{params.zkc_price_steps + 1} price points · {params.gpuConfigs.length} configs
+
+          {/* Epoch data status indicator */}
+          <div className="ml-auto flex items-center gap-2 text-xs pr-2">
+            {epochsLoading ? (
+              <span className="text-gray-500 animate-pulse">Loading epoch data…</span>
+            ) : epochsError ? (
+              <span className="text-yellow-500" title={epochsError}>⚠ {epochsError}</span>
+            ) : (
+              <span className="text-gray-600">{epochs.length} epochs loaded</span>
+            )}
           </div>
         </div>
 
         {/* Tab content */}
-        <div className="flex-1 overflow-y-auto">
-          {activeTab === 'Profit Explorer' && (
-            <ProfitExplorer results={results} params={params} />
-          )}
-          {activeTab === 'Break-even' && (
-            <Breakeven params={params} />
-          )}
-          {activeTab === 'Scenarios' && (
-            <Scenarios results={results} />
+        <div className="flex-1 overflow-auto p-6">
+          {epochsLoading ? (
+            <div className="flex items-center justify-center h-full">
+              <div className="text-center">
+                <div className="text-4xl mb-4 animate-pulse">⬡</div>
+                <p className="text-gray-400">Loading epoch data…</p>
+              </div>
+            </div>
+          ) : (
+            <>
+              {activeTab === 'Profit Explorer' && (
+                <ProfitExplorer params={params} results={results} />
+              )}
+              {activeTab === 'Break-even' && (
+                <Breakeven params={params} />
+              )}
+              {activeTab === 'Scenarios' && (
+                <Scenarios results={results} />
+              )}
+            </>
           )}
         </div>
       </div>
