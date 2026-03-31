@@ -1,9 +1,10 @@
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo, useEffect, useCallback } from 'react';
 import { computeResults } from './lib/compute';
 import type { ModelParams } from './lib/compute';
 import { computePovwRate } from './lib/parseEpochs';
 import type { EpochData } from './lib/parseEpochs';
 import Sidebar from './components/Sidebar';
+import ZkcTicker from './components/ZkcTicker';
 import ProfitExplorer from './components/tabs/ProfitExplorer';
 import Breakeven from './components/tabs/Breakeven';
 import Scenarios from './components/tabs/Scenarios';
@@ -23,7 +24,7 @@ const DEFAULT_PARAMS: ModelParams = {
   market_reward_usd_per_bcycle: 0.07,
   market_order_util: 0.5,
   fixed_cost_monthly_usd: 0,
-  povw_zkc_per_mhz_per_epoch: 0, // populated once epochs load
+  povw_zkc_per_mhz_per_epoch: 0,
 };
 
 const TABS = ['Profit Explorer', 'Break-even', 'Scenarios'] as const;
@@ -36,6 +37,7 @@ export default function App() {
   const [epochs, setEpochs] = useState<EpochData[]>([]);
   const [epochsLoading, setEpochsLoading] = useState(true);
   const [epochsError, setEpochsError] = useState<string | null>(null);
+  const [liveZkcPrice, setLiveZkcPrice] = useState<number | null>(null);
 
   // Fetch epoch data from Pages Function (falls back to bundled JSON in dev)
   useEffect(() => {
@@ -51,7 +53,7 @@ export default function App() {
           ...p,
           povw_zkc_per_mhz_per_epoch: computePovwRate(data, DEFAULT_LOOKBACK),
         }));
-      } catch (err) {
+      } catch {
         // Fallback: load bundled epochs.json for local dev without wrangler
         try {
           const fallback = await import('./data/epochs.json');
@@ -82,6 +84,11 @@ export default function App() {
     }
   }, [lookback, epochs]);
 
+  // Called by ZkcTicker when price loads — passed to Sidebar for "use live price" button
+  const handlePriceLoad = useCallback((price: number) => {
+    setLiveZkcPrice(price);
+  }, []);
+
   const results = useMemo(() => computeResults(params), [params]);
 
   return (
@@ -95,7 +102,7 @@ export default function App() {
       />
 
       <div className="flex-1 flex flex-col overflow-hidden">
-        {/* Tab bar */}
+        {/* Header bar */}
         <div className="bg-[#111827] border-b border-gray-800 px-6 flex items-center gap-0 flex-shrink-0">
           {TABS.map(tab => (
             <button
@@ -111,14 +118,16 @@ export default function App() {
             </button>
           ))}
 
-          {/* Epoch data status indicator */}
-          <div className="ml-auto flex items-center gap-2 text-xs pr-2">
+          {/* Right side: ticker + epoch status */}
+          <div className="ml-auto flex items-center gap-4 pr-2">
+            <ZkcTicker onPriceLoad={handlePriceLoad} />
+            <span className="w-px h-4 bg-gray-700" />
             {epochsLoading ? (
-              <span className="text-gray-500 animate-pulse">Loading epoch data…</span>
+              <span className="text-gray-500 text-xs animate-pulse">Loading epochs…</span>
             ) : epochsError ? (
-              <span className="text-yellow-500" title={epochsError}>⚠ {epochsError}</span>
+              <span className="text-yellow-500 text-xs" title={epochsError}>⚠ {epochsError}</span>
             ) : (
-              <span className="text-gray-600">{epochs.length} epochs loaded</span>
+              <span className="text-gray-600 text-xs">{epochs.length} epochs</span>
             )}
           </div>
         </div>
@@ -135,13 +144,13 @@ export default function App() {
           ) : (
             <>
               {activeTab === 'Profit Explorer' && (
-                <ProfitExplorer params={params} results={results} />
+                <ProfitExplorer params={params} results={results} liveZkcPrice={liveZkcPrice} />
               )}
               {activeTab === 'Break-even' && (
-                <Breakeven params={params} />
+                <Breakeven params={params} liveZkcPrice={liveZkcPrice} />
               )}
               {activeTab === 'Scenarios' && (
-                <Scenarios results={results} />
+                <Scenarios results={results} liveZkcPrice={liveZkcPrice} />
               )}
             </>
           )}

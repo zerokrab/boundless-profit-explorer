@@ -9,6 +9,7 @@ import type { ModelParams, ScenarioResult } from '../../lib/compute';
 interface Props {
   results: ScenarioResult[];
   params: ModelParams;
+  liveZkcPrice: number | null;
 }
 
 const fmtUsd = (v: number) => `$${v.toFixed(2)}`;
@@ -17,7 +18,7 @@ const fmtUsdShort = (v: number) => {
   return `$${v.toFixed(0)}`;
 };
 
-export default function ProfitExplorer({ results, params }: Props) {
+export default function ProfitExplorer({ results, params, liveZkcPrice }: Props) {
   const prices = useMemo(() => computeZkcPrices(params.zkc_price_min, params.zkc_price_max, params.zkc_price_steps), [params]);
   const [priceIdx, setPriceIdx] = useState(0);
   const selectedPrice = prices[priceIdx] ?? params.zkc_price_min;
@@ -67,16 +68,38 @@ export default function ProfitExplorer({ results, params }: Props) {
           <span className="text-gray-400 text-sm">ZKC Price</span>
           <span className="text-cyan-400 font-mono text-lg font-semibold">${selectedPrice.toFixed(4)}</span>
         </div>
-        <input
-          type="range"
-          min={0}
-          max={prices.length - 1}
-          step={1}
-          value={priceIdx}
-          onChange={e => setPriceIdx(Number(e.target.value))}
-          className="w-full accent-cyan-500"
-        />
-        <div className="flex justify-between text-gray-600 text-xs mt-1">
+        {/* Slider with optional live-price marker */}
+        <div className="relative">
+          <input
+            type="range"
+            min={0}
+            max={prices.length - 1}
+            step={1}
+            value={priceIdx}
+            onChange={e => setPriceIdx(Number(e.target.value))}
+            className="w-full accent-cyan-500"
+          />
+          {(() => {
+            if (liveZkcPrice === null) return null;
+            const inRange = liveZkcPrice >= params.zkc_price_min && liveZkcPrice <= params.zkc_price_max;
+            if (!inRange) return null;
+            const pct = (liveZkcPrice - params.zkc_price_min) / (params.zkc_price_max - params.zkc_price_min) * 100;
+            return (
+              <div
+                className="absolute flex flex-col items-center pointer-events-none"
+                style={{ left: `${pct}%`, transform: 'translateX(-50%)', top: '100%', marginTop: '2px' }}
+              >
+                <div className="w-px h-2 bg-amber-400" />
+                <span className="text-amber-400 font-mono whitespace-nowrap" style={{ fontSize: '10px' }}>
+                  ${liveZkcPrice.toFixed(4)}
+                </span>
+              </div>
+            );
+          })()}
+        </div>
+        {/* Extra space reserved for the current-price marker when visible */}
+        <div className="h-8" />
+        <div className="flex justify-between text-gray-600 text-xs -mt-2">
           <span>${params.zkc_price_min.toFixed(3)}</span>
           <span>${params.zkc_price_max.toFixed(3)}</span>
         </div>
@@ -151,9 +174,9 @@ export default function ProfitExplorer({ results, params }: Props) {
                 labelStyle={{ color: '#e5e7eb' }}
               />
               <ReferenceLine x={0} stroke="#4b5563" />
-              <Bar dataKey="povw" name="povw" fill="#3b82f6" stackId="a" />
-              <Bar dataKey="market" name="market" fill="#8b5cf6" stackId="a" />
-              <Bar dataKey="cost" name="cost" fill="#f97316" stackId="a" />
+              <Bar dataKey="povw" name="POVW" fill="#3b82f6" stackId="revenue" radius={[0, 0, 0, 0]} />
+              <Bar dataKey="market" name="Market" fill="#8b5cf6" stackId="revenue" radius={[0, 4, 4, 0]} />
+              <Bar dataKey="cost" name="Cost" fill="#f97316" stackId="cost" radius={[0, 4, 4, 0]} />
             </BarChart>
           </ResponsiveContainer>
         </div>
