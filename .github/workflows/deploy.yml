@@ -36,11 +36,3 @@ jobs:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           command: pages deploy dist --project-name=boundless-profit-explorer --commit-dirty=true
-        env:
-          # KV namespace IDs are set here so wrangler can bind them at deploy time.
-          # Create the namespaces once with:
-          #   wrangler kv namespace create EPOCHS_CACHE
-          #   wrangler kv namespace create EPOCHS_CACHE --preview
-          # Then set these secrets in the repo settings.
-          CLOUDFLARE_KV_EPOCHS_CACHE_ID: ${{ secrets.CLOUDFLARE_KV_EPOCHS_CACHE_ID }}
-          CLOUDFLARE_KV_EPOCHS_CACHE_PREVIEW_ID: ${{ secrets.CLOUDFLARE_KV_EPOCHS_CACHE_PREVIEW_ID }}
