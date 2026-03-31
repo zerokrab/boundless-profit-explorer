@@ -99,7 +99,6 @@ export default function App() {
         epochs={epochs}
         lookback={lookback}
         onLookbackChange={setLookback}
-        liveZkcPrice={liveZkcPrice}
       />
 
       <div className="flex-1 flex flex-col overflow-hidden">

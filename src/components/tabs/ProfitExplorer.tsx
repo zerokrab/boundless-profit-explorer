@@ -66,32 +66,38 @@ export default function ProfitExplorer({ results, params, liveZkcPrice }: Props)
       <div className="bg-[#111827] rounded-lg p-4 mb-6 border border-gray-800">
         <div className="flex items-center justify-between mb-2">
           <span className="text-gray-400 text-sm">ZKC Price</span>
-          <div className="flex items-center gap-3">
-            {liveZkcPrice !== null && (
-              <button
-                onClick={() => {
-                  const closest = prices.reduce((best, p, i) =>
-                    Math.abs(p - liveZkcPrice) < Math.abs(prices[best] - liveZkcPrice) ? i : best, 0);
-                  setPriceIdx(closest);
-                }}
-                className="text-xs text-amber-400 hover:text-amber-300 transition-colors border border-amber-800 hover:border-amber-600 rounded px-2 py-0.5"
-              >
-                Use current price (${liveZkcPrice.toFixed(4)})
-              </button>
-            )}
-            <span className="text-cyan-400 font-mono text-lg font-semibold">${selectedPrice.toFixed(4)}</span>
-          </div>
+          <span className="text-cyan-400 font-mono text-lg font-semibold">${selectedPrice.toFixed(4)}</span>
         </div>
-        <input
-          type="range"
-          min={0}
-          max={prices.length - 1}
-          step={1}
-          value={priceIdx}
-          onChange={e => setPriceIdx(Number(e.target.value))}
-          className="w-full accent-cyan-500"
-        />
-        <div className="flex justify-between text-gray-600 text-xs mt-1">
+        {/* Slider with optional live-price marker */}
+        <div className="relative">
+          <input
+            type="range"
+            min={0}
+            max={prices.length - 1}
+            step={1}
+            value={priceIdx}
+            onChange={e => setPriceIdx(Number(e.target.value))}
+            className="w-full accent-cyan-500"
+          />
+          {(() => {
+            if (liveZkcPrice === null) return null;
+            const inRange = liveZkcPrice >= params.zkc_price_min && liveZkcPrice <= params.zkc_price_max;
+            if (!inRange) return null;
+            const pct = (liveZkcPrice - params.zkc_price_min) / (params.zkc_price_max - params.zkc_price_min) * 100;
+            return (
+              <div
+                className="absolute top-full mt-0.5 flex flex-col items-center pointer-events-none"
+                style={{ left: `${pct}%`, transform: 'translateX(-50%)' }}
+              >
+                <div className="w-px h-1.5 bg-amber-400" />
+                <span className="text-amber-400 font-mono whitespace-nowrap" style={{ fontSize: '10px' }}>
+                  ${liveZkcPrice.toFixed(4)}
+                </span>
+              </div>
+            );
+          })()}
+        </div>
+        <div className="flex justify-between text-gray-600 text-xs mt-5">
           <span>${params.zkc_price_min.toFixed(3)}</span>
           <span>${params.zkc_price_max.toFixed(3)}</span>
         </div>
