@@ -1,0 +1,695 @@
+[
+  {
+    "epoch": 99,
+    "timestamp": "2026-03-27T20:41:35.000Z",
+    "zkc_price_usd": 0.072116,
+    "total_cycles": 519000000000000.0,
+    "mining_rewards_zkc": 289000.0
+  },
+  {
+    "epoch": 98,
+    "timestamp": "2026-03-25T20:41:35.000Z",
+    "zkc_price_usd": 0.075137,
+    "total_cycles": 660000000000000.0,
+    "mining_rewards_zkc": 287000.0
+  },
+  {
+    "epoch": 97,
+    "timestamp": "2026-03-23T20:41:35.000Z",
+    "zkc_price_usd": 0.072759,
+    "total_cycles": 615000000000000.0,
+    "mining_rewards_zkc": 289000.0
+  },
+  {
+    "epoch": 96,
+    "timestamp": "2026-03-21T20:41:35.000Z",
+    "zkc_price_usd": 0.077507,
+    "total_cycles": 664000000000000.0,
+    "mining_rewards_zkc": 289000.0
+  },
+  {
+    "epoch": 95,
+    "timestamp": "2026-03-19T20:41:35.000Z",
+    "zkc_price_usd": 0.083023,
+    "total_cycles": 791000000.0,
+    "mining_rewards_zkc": 289000.0
+  },
+  {
+    "epoch": 94,
+    "timestamp": "2026-03-17T20:41:35.000Z",
+    "zkc_price_usd": 0.082621,
+    "total_cycles": 725000000000000.0,
+    "mining_rewards_zkc": 288000.0
+  },
+  {
+    "epoch": 93,
+    "timestamp": "2026-03-15T20:41:35.000Z",
+    "zkc_price_usd": 0.073869,
+    "total_cycles": 791000000000000.0,
+    "mining_rewards_zkc": 288000.0
+  },
+  {
+    "epoch": 92,
+    "timestamp": "2026-03-13T20:41:35.000Z",
+    "zkc_price_usd": 0.062551,
+    "total_cycles": 688000000000000.0,
+    "mining_rewards_zkc": 288000.0
+  },
+  {
+    "epoch": 91,
+    "timestamp": "2026-03-11T20:41:35.000Z",
+    "zkc_price_usd": 0.061861,
+    "total_cycles": 703000000000000.0,
+    "mining_rewards_zkc": 288000.0
+  },
+  {
+    "epoch": 90,
+    "timestamp": "2026-03-09T20:41:35.000Z",
+    "zkc_price_usd": 0.05942,
+    "total_cycles": 634000000000000.0,
+    "mining_rewards_zkc": 288000.0
+  },
+  {
+    "epoch": 89,
+    "timestamp": "2026-03-07T20:41:35.000Z",
+    "zkc_price_usd": 0.064565,
+    "total_cycles": 597000000000000.0,
+    "mining_rewards_zkc": 285000.0
+  },
+  {
+    "epoch": 88,
+    "timestamp": "2026-03-05T20:41:35.000Z",
+    "zkc_price_usd": 0.067098,
+    "total_cycles": 621000000000000.0,
+    "mining_rewards_zkc": 284000.0
+  },
+  {
+    "epoch": 87,
+    "timestamp": "2026-03-03T20:41:35.000Z",
+    "zkc_price_usd": 0.080558,
+    "total_cycles": 595000000000000.0,
+    "mining_rewards_zkc": 283000.0
+  },
+  {
+    "epoch": 86,
+    "timestamp": "2026-03-01T20:41:35.000Z",
+    "zkc_price_usd": 0.070085,
+    "total_cycles": 553000000000000.0,
+    "mining_rewards_zkc": 282000.0
+  },
+  {
+    "epoch": 85,
+    "timestamp": "2026-02-27T20:41:35.000Z",
+    "zkc_price_usd": 0.101047,
+    "total_cycles": 556000000000000.0,
+    "mining_rewards_zkc": 282000.0
+  },
+  {
+    "epoch": 84,
+    "timestamp": "2026-02-25T20:41:35.000Z",
+    "zkc_price_usd": 0.088655,
+    "total_cycles": 558000000000000.0,
+    "mining_rewards_zkc": 282000.0
+  },
+  {
+    "epoch": 83,
+    "timestamp": "2026-02-23T20:41:35.000Z",
+    "zkc_price_usd": 0.086738,
+    "total_cycles": 469000000000000.0,
+    "mining_rewards_zkc": 282000.0
+  },
+  {
+    "epoch": 82,
+    "timestamp": "2026-02-21T20:41:35.000Z",
+    "zkc_price_usd": 0.088009,
+    "total_cycles": 542000000000000.0,
+    "mining_rewards_zkc": 281000.0
+  },
+  {
+    "epoch": 81,
+    "timestamp": "2026-02-19T20:41:35.000Z",
+    "zkc_price_usd": 0.112091,
+    "total_cycles": 584000000000000.0,
+    "mining_rewards_zkc": 281000.0
+  },
+  {
+    "epoch": 80,
+    "timestamp": "2026-02-17T20:41:35.000Z",
+    "zkc_price_usd": 0.126938,
+    "total_cycles": 615000000000000.0,
+    "mining_rewards_zkc": 281000.0
+  },
+  {
+    "epoch": 79,
+    "timestamp": "2026-02-15T20:41:35.000Z",
+    "zkc_price_usd": 0.1261,
+    "total_cycles": 586000000000000.0,
+    "mining_rewards_zkc": 281000.0
+  },
+  {
+    "epoch": 78,
+    "timestamp": "2026-02-13T20:41:35.000Z",
+    "zkc_price_usd": 0.100517,
+    "total_cycles": 601000000000000.0,
+    "mining_rewards_zkc": 280000.0
+  },
+  {
+    "epoch": 77,
+    "timestamp": "2026-02-11T20:41:35.000Z",
+    "zkc_price_usd": 0.097716,
+    "total_cycles": 544000000000000.0,
+    "mining_rewards_zkc": 280000.0
+  },
+  {
+    "epoch": 76,
+    "timestamp": "2026-02-09T20:41:35.000Z",
+    "zkc_price_usd": 0.090063,
+    "total_cycles": 545000000000000.0,
+    "mining_rewards_zkc": 280000.0
+  },
+  {
+    "epoch": 75,
+    "timestamp": "2026-02-07T20:41:35.000Z",
+    "zkc_price_usd": 0.089376,
+    "total_cycles": 591000000000000.0,
+    "mining_rewards_zkc": 280000.0
+  },
+  {
+    "epoch": 74,
+    "timestamp": "2026-02-05T20:41:35.000Z",
+    "zkc_price_usd": 0.090744,
+    "total_cycles": 491000000000000.0,
+    "mining_rewards_zkc": 280000.0
+  },
+  {
+    "epoch": 73,
+    "timestamp": "2026-02-03T20:41:35.000Z",
+    "zkc_price_usd": 0.079085,
+    "total_cycles": 395000000000000.0,
+    "mining_rewards_zkc": 279000.0
+  },
+  {
+    "epoch": 72,
+    "timestamp": "2026-02-01T20:41:35.000Z",
+    "zkc_price_usd": 0.078154,
+    "total_cycles": 371000000000000.0,
+    "mining_rewards_zkc": 279000.0
+  },
+  {
+    "epoch": 71,
+    "timestamp": "2026-01-30T20:41:35.000Z",
+    "zkc_price_usd": 0.071836,
+    "total_cycles": 341000000000000.0,
+    "mining_rewards_zkc": 279000.0
+  },
+  {
+    "epoch": 70,
+    "timestamp": "2026-01-28T20:41:35.000Z",
+    "zkc_price_usd": 0.065009,
+    "total_cycles": 394000000000000.0,
+    "mining_rewards_zkc": 279000.0
+  },
+  {
+    "epoch": 69,
+    "timestamp": "2026-01-26T20:41:35.000Z",
+    "zkc_price_usd": 0.066011,
+    "total_cycles": 358000000000000.0,
+    "mining_rewards_zkc": 278000.0
+  },
+  {
+    "epoch": 68,
+    "timestamp": "2026-01-24T20:41:35.000Z",
+    "zkc_price_usd": 0.084403,
+    "total_cycles": 384000000000000.0,
+    "mining_rewards_zkc": 278000.0
+  },
+  {
+    "epoch": 67,
+    "timestamp": "2026-01-22T20:41:35.000Z",
+    "zkc_price_usd": 0.073985,
+    "total_cycles": 402000000000000.0,
+    "mining_rewards_zkc": 278000.0
+  },
+  {
+    "epoch": 66,
+    "timestamp": "2026-01-20T20:41:35.000Z",
+    "zkc_price_usd": 0.072659,
+    "total_cycles": 338000000000000.0,
+    "mining_rewards_zkc": 278000.0
+  },
+  {
+    "epoch": 65,
+    "timestamp": "2026-01-18T20:41:35.000Z",
+    "zkc_price_usd": 0.05973,
+    "total_cycles": 363000000000000.0,
+    "mining_rewards_zkc": 277000.0
+  },
+  {
+    "epoch": 64,
+    "timestamp": "2026-01-16T20:41:35.000Z",
+    "zkc_price_usd": 0.060248,
+    "total_cycles": 334000000000000.0,
+    "mining_rewards_zkc": 277000.0
+  },
+  {
+    "epoch": 63,
+    "timestamp": "2026-01-14T20:41:35.000Z",
+    "zkc_price_usd": 0.059,
+    "total_cycles": 381000000000000.0,
+    "mining_rewards_zkc": 277000.0
+  },
+  {
+    "epoch": 62,
+    "timestamp": "2026-01-12T20:41:35.000Z",
+    "zkc_price_usd": 0.060804,
+    "total_cycles": 357000000000000.0,
+    "mining_rewards_zkc": 276000.0
+  },
+  {
+    "epoch": 61,
+    "timestamp": "2026-01-10T20:41:35.000Z",
+    "zkc_price_usd": 0.05967,
+    "total_cycles": 323000000000000.0,
+    "mining_rewards_zkc": 276000.0
+  },
+  {
+    "epoch": 60,
+    "timestamp": "2026-01-08T20:41:35.000Z",
+    "zkc_price_usd": 0.052419,
+    "total_cycles": 306000000000000.0,
+    "mining_rewards_zkc": 276000.0
+  },
+  {
+    "epoch": 59,
+    "timestamp": "2026-01-06T20:41:35.000Z",
+    "zkc_price_usd": 0.05065,
+    "total_cycles": 272000000000000.0,
+    "mining_rewards_zkc": 275000.0
+  },
+  {
+    "epoch": 58,
+    "timestamp": "2026-01-04T20:41:35.000Z",
+    "zkc_price_usd": 0.053614,
+    "total_cycles": 320000000000000.0,
+    "mining_rewards_zkc": 275000.0
+  },
+  {
+    "epoch": 57,
+    "timestamp": "2026-01-02T20:41:35.000Z",
+    "zkc_price_usd": 0.055827,
+    "total_cycles": 312000000000000.0,
+    "mining_rewards_zkc": 275000.0
+  },
+  {
+    "epoch": 56,
+    "timestamp": "2025-12-31T20:41:35.000Z",
+    "zkc_price_usd": 0.054534,
+    "total_cycles": 297000000000000.0,
+    "mining_rewards_zkc": 274000.0
+  },
+  {
+    "epoch": 55,
+    "timestamp": "2025-12-29T20:41:35.000Z",
+    "zkc_price_usd": 0.056978,
+    "total_cycles": 305000000000000.0,
+    "mining_rewards_zkc": 274000.0
+  },
+  {
+    "epoch": 54,
+    "timestamp": "2025-12-27T20:41:35.000Z",
+    "zkc_price_usd": 0.044866,
+    "total_cycles": 302000000000000.0,
+    "mining_rewards_zkc": 274000.0
+  },
+  {
+    "epoch": 53,
+    "timestamp": "2025-12-25T20:41:35.000Z",
+    "zkc_price_usd": 0.05024,
+    "total_cycles": 289000000000000.0,
+    "mining_rewards_zkc": 273000.0
+  },
+  {
+    "epoch": 52,
+    "timestamp": "2025-12-23T20:41:35.000Z",
+    "zkc_price_usd": 0.053887,
+    "total_cycles": 269000000000000.0,
+    "mining_rewards_zkc": 273000.0
+  },
+  {
+    "epoch": 51,
+    "timestamp": "2025-12-21T20:41:35.000Z",
+    "zkc_price_usd": 0.056726,
+    "total_cycles": 245000000000000.0,
+    "mining_rewards_zkc": 273000.0
+  },
+  {
+    "epoch": 50,
+    "timestamp": "2025-12-19T20:41:35.000Z",
+    "zkc_price_usd": 0.052959,
+    "total_cycles": 254000000000000.0,
+    "mining_rewards_zkc": 272000.0
+  },
+  {
+    "epoch": 49,
+    "timestamp": "2025-12-17T20:41:35.000Z",
+    "zkc_price_usd": 0.050073,
+    "total_cycles": 261000000000000.0,
+    "mining_rewards_zkc": 272000.0
+  },
+  {
+    "epoch": 48,
+    "timestamp": "2025-12-15T20:41:35.000Z",
+    "zkc_price_usd": 0.054219,
+    "total_cycles": 230000000000000.0,
+    "mining_rewards_zkc": 272000.0
+  },
+  {
+    "epoch": 47,
+    "timestamp": "2025-12-13T20:41:35.000Z",
+    "zkc_price_usd": 0.047028,
+    "total_cycles": 207000000000000.0,
+    "mining_rewards_zkc": 271000.0
+  },
+  {
+    "epoch": 46,
+    "timestamp": "2025-12-11T20:41:35.000Z",
+    "zkc_price_usd": 0.052834,
+    "total_cycles": 215000000000000.0,
+    "mining_rewards_zkc": 271000.0
+  },
+  {
+    "epoch": 45,
+    "timestamp": "2025-12-09T20:41:35.000Z",
+    "zkc_price_usd": 0.054282,
+    "total_cycles": 193000000000000.0,
+    "mining_rewards_zkc": 271000.0
+  },
+  {
+    "epoch": 44,
+    "timestamp": "2025-12-07T20:41:35.000Z",
+    "zkc_price_usd": 0.069207,
+    "total_cycles": 195000000000000.0,
+    "mining_rewards_zkc": 271000.0
+  },
+  {
+    "epoch": 43,
+    "timestamp": "2025-12-05T20:41:35.000Z",
+    "zkc_price_usd": 0.073028,
+    "total_cycles": 245000000000000.0,
+    "mining_rewards_zkc": 270000.0
+  },
+  {
+    "epoch": 42,
+    "timestamp": "2025-12-03T20:41:35.000Z",
+    "zkc_price_usd": 0.081965,
+    "total_cycles": 232000000000000.0,
+    "mining_rewards_zkc": 270000.0
+  },
+  {
+    "epoch": 41,
+    "timestamp": "2025-12-01T20:41:35.000Z",
+    "zkc_price_usd": 0.080697,
+    "total_cycles": 210000000000000.0,
+    "mining_rewards_zkc": 270000.0
+  },
+  {
+    "epoch": 40,
+    "timestamp": "2025-11-29T20:41:35.000Z",
+    "zkc_price_usd": 0.07654,
+    "total_cycles": 195000000000000.0,
+    "mining_rewards_zkc": 270000.0
+  },
+  {
+    "epoch": 39,
+    "timestamp": "2025-11-27T20:41:35.000Z",
+    "zkc_price_usd": 0.068694,
+    "total_cycles": 185000000000000.0,
+    "mining_rewards_zkc": 269000.0
+  },
+  {
+    "epoch": 38,
+    "timestamp": "2025-11-25T20:41:35.000Z",
+    "zkc_price_usd": 0.068718,
+    "total_cycles": 184000000000000.0,
+    "mining_rewards_zkc": 269000.0
+  },
+  {
+    "epoch": 37,
+    "timestamp": "2025-11-23T20:41:35.000Z",
+    "zkc_price_usd": 0.069065,
+    "total_cycles": 189000000000000.0,
+    "mining_rewards_zkc": 269000.0
+  },
+  {
+    "epoch": 36,
+    "timestamp": "2025-11-21T20:41:35.000Z",
+    "zkc_price_usd": 0.073011,
+    "total_cycles": 187000000000000.0,
+    "mining_rewards_zkc": 268000.0
+  },
+  {
+    "epoch": 35,
+    "timestamp": "2025-11-19T20:41:35.000Z",
+    "zkc_price_usd": 0.07157,
+    "total_cycles": 175000000000000.0,
+    "mining_rewards_zkc": 268000.0
+  },
+  {
+    "epoch": 34,
+    "timestamp": "2025-11-17T20:41:35.000Z",
+    "zkc_price_usd": 0.066403,
+    "total_cycles": 177000000000000.0,
+    "mining_rewards_zkc": 268000.0
+  },
+  {
+    "epoch": 33,
+    "timestamp": "2025-11-15T20:41:35.000Z",
+    "zkc_price_usd": 0.065603,
+    "total_cycles": 152000000000000.0,
+    "mining_rewards_zkc": 268000.0
+  },
+  {
+    "epoch": 32,
+    "timestamp": "2025-11-13T20:41:35.000Z",
+    "zkc_price_usd": 0.065985,
+    "total_cycles": 148000000000000.0,
+    "mining_rewards_zkc": 267000.0
+  },
+  {
+    "epoch": 31,
+    "timestamp": "2025-11-11T20:41:35.000Z",
+    "zkc_price_usd": 0.072553,
+    "total_cycles": 116000000000000.0,
+    "mining_rewards_zkc": 267000.0
+  },
+  {
+    "epoch": 30,
+    "timestamp": "2025-11-09T20:41:35.000Z",
+    "zkc_price_usd": 0.063748,
+    "total_cycles": 131000000000000.0,
+    "mining_rewards_zkc": 267000.0
+  },
+  {
+    "epoch": 29,
+    "timestamp": "2025-11-07T20:41:35.000Z",
+    "zkc_price_usd": 0.05617,
+    "total_cycles": 133000000000000.0,
+    "mining_rewards_zkc": 266000.0
+  },
+  {
+    "epoch": 28,
+    "timestamp": "2025-11-05T20:41:35.000Z",
+    "zkc_price_usd": 0.055042,
+    "total_cycles": 113000000000000.0,
+    "mining_rewards_zkc": 266000.0
+  },
+  {
+    "epoch": 27,
+    "timestamp": "2025-11-03T20:41:35.000Z",
+    "zkc_price_usd": 0.04997,
+    "total_cycles": 107000000000000.0,
+    "mining_rewards_zkc": 266000.0
+  },
+  {
+    "epoch": 26,
+    "timestamp": "2025-11-01T20:41:35.000Z",
+    "zkc_price_usd": 0.050344,
+    "total_cycles": 105000000000000.0,
+    "mining_rewards_zkc": 266000.0
+  },
+  {
+    "epoch": 25,
+    "timestamp": "2025-10-30T20:41:35.000Z",
+    "zkc_price_usd": 0.047044,
+    "total_cycles": 110000000000000.0,
+    "mining_rewards_zkc": 265000.0
+  },
+  {
+    "epoch": 24,
+    "timestamp": "2025-10-28T20:41:35.000Z",
+    "zkc_price_usd": 0.044895,
+    "total_cycles": 97600000000000.0,
+    "mining_rewards_zkc": 265000.0
+  },
+  {
+    "epoch": 23,
+    "timestamp": "2025-10-26T20:41:35.000Z",
+    "zkc_price_usd": 0.038826,
+    "total_cycles": 100000000000000.0,
+    "mining_rewards_zkc": 265000.0
+  },
+  {
+    "epoch": 22,
+    "timestamp": "2025-10-24T20:41:35.000Z",
+    "zkc_price_usd": 0.037918,
+    "total_cycles": 107000000000000.0,
+    "mining_rewards_zkc": 264000.0
+  },
+  {
+    "epoch": 21,
+    "timestamp": "2025-10-22T20:41:35.000Z",
+    "zkc_price_usd": 0.039534,
+    "total_cycles": 103000000000000.0,
+    "mining_rewards_zkc": 264000.0
+  },
+  {
+    "epoch": 20,
+    "timestamp": "2025-10-20T20:41:35.000Z",
+    "zkc_price_usd": 0.039424,
+    "total_cycles": 89400000000000.0,
+    "mining_rewards_zkc": 264000.0
+  },
+  {
+    "epoch": 19,
+    "timestamp": "2025-10-18T20:41:35.000Z",
+    "zkc_price_usd": 0.038064,
+    "total_cycles": 104000000000000.0,
+    "mining_rewards_zkc": 264000.0
+  },
+  {
+    "epoch": 18,
+    "timestamp": "2025-10-16T20:41:35.000Z",
+    "zkc_price_usd": 0.038965,
+    "total_cycles": 93100000000000.0,
+    "mining_rewards_zkc": 263000.0
+  },
+  {
+    "epoch": 17,
+    "timestamp": "2025-10-14T20:41:35.000Z",
+    "zkc_price_usd": 0.039404,
+    "total_cycles": 89900000000000.0,
+    "mining_rewards_zkc": 263000.0
+  },
+  {
+    "epoch": 16,
+    "timestamp": "2025-10-12T20:41:35.000Z",
+    "zkc_price_usd": 0.038773,
+    "total_cycles": 96100000000000.0,
+    "mining_rewards_zkc": 263000.0
+  },
+  {
+    "epoch": 15,
+    "timestamp": "2025-10-10T20:41:35.000Z",
+    "zkc_price_usd": 0.036218,
+    "total_cycles": 74200000000000.0,
+    "mining_rewards_zkc": 263000.0
+  },
+  {
+    "epoch": 14,
+    "timestamp": "2025-10-08T20:41:35.000Z",
+    "zkc_price_usd": 0.032614,
+    "total_cycles": 73200000000000.0,
+    "mining_rewards_zkc": 262000.0
+  },
+  {
+    "epoch": 13,
+    "timestamp": "2025-10-06T20:41:35.000Z",
+    "zkc_price_usd": 0.033428,
+    "total_cycles": 68800000000000.0,
+    "mining_rewards_zkc": 262000.0
+  },
+  {
+    "epoch": 12,
+    "timestamp": "2025-10-04T20:41:35.000Z",
+    "zkc_price_usd": 0.034494,
+    "total_cycles": 70500000000000.0,
+    "mining_rewards_zkc": 262000.0
+  },
+  {
+    "epoch": 11,
+    "timestamp": "2025-10-02T20:41:35.000Z",
+    "zkc_price_usd": 0.034888,
+    "total_cycles": 62900000000000.0,
+    "mining_rewards_zkc": 262000.0
+  },
+  {
+    "epoch": 10,
+    "timestamp": "2025-09-30T20:41:35.000Z",
+    "zkc_price_usd": 0.033788,
+    "total_cycles": 67300000000000.0,
+    "mining_rewards_zkc": 261000.0
+  },
+  {
+    "epoch": 9,
+    "timestamp": "2025-09-28T20:41:35.000Z",
+    "zkc_price_usd": 0.031803,
+    "total_cycles": 58200000000000.0,
+    "mining_rewards_zkc": 261000.0
+  },
+  {
+    "epoch": 8,
+    "timestamp": "2025-09-26T20:41:35.000Z",
+    "zkc_price_usd": 0.027539,
+    "total_cycles": 52400000000000.0,
+    "mining_rewards_zkc": 261000.0
+  },
+  {
+    "epoch": 7,
+    "timestamp": "2025-09-24T20:41:35.000Z",
+    "zkc_price_usd": 0.021403,
+    "total_cycles": 53100000000000.0,
+    "mining_rewards_zkc": 261000.0
+  },
+  {
+    "epoch": 6,
+    "timestamp": "2025-09-22T20:41:35.000Z",
+    "zkc_price_usd": 0.024736,
+    "total_cycles": 44500000000000.0,
+    "mining_rewards_zkc": 260000.0
+  },
+  {
+    "epoch": 5,
+    "timestamp": "2025-09-20T20:41:35.000Z",
+    "zkc_price_usd": 0.022897,
+    "total_cycles": 31100000000000.0,
+    "mining_rewards_zkc": 260000.0
+  },
+  {
+    "epoch": 4,
+    "timestamp": "2025-09-18T20:41:35.000Z",
+    "zkc_price_usd": 0.022018,
+    "total_cycles": 37200000000000.0,
+    "mining_rewards_zkc": 260000.0
+  },
+  {
+    "epoch": 3,
+    "timestamp": "2025-09-16T20:41:35.000Z",
+    "zkc_price_usd": 0.021693,
+    "total_cycles": 30200000000000.0,
+    "mining_rewards_zkc": 260000.0
+  },
+  {
+    "epoch": 2,
+    "timestamp": "2025-09-14T20:41:35.000Z",
+    "zkc_price_usd": 0.023437,
+    "total_cycles": 27800000000000.0,
+    "mining_rewards_zkc": 260000.0
+  },
+  {
+    "epoch": 1,
+    "timestamp": "2025-09-12T20:41:35.000Z",
+    "zkc_price_usd": 0.022918,
+    "total_cycles": 25400000000000.0,
+    "mining_rewards_zkc": 259000.0
+  }
+]
