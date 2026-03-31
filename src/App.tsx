@@ -8,6 +8,7 @@ import ZkcTicker from './components/ZkcTicker';
 import ProfitExplorer from './components/tabs/ProfitExplorer';
 import Breakeven from './components/tabs/Breakeven';
 import Scenarios from './components/tabs/Scenarios';
+import { Menu, X } from 'lucide-react';
 
 const DEFAULT_LOOKBACK = 10;
 
@@ -38,6 +39,7 @@ export default function App() {
   const [epochsLoading, setEpochsLoading] = useState(true);
   const [epochsError, setEpochsError] = useState<string | null>(null);
   const [liveZkcPrice, setLiveZkcPrice] = useState<number | null>(null);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
 
   // Fetch epoch data from Pages Function (falls back to bundled JSON in dev)
   useEffect(() => {
@@ -91,45 +93,81 @@ export default function App() {
 
   const results = useMemo(() => computeResults(params), [params]);
 
+  // Close sidebar when tab changes on mobile
+  const handleTabChange = (tab: Tab) => {
+    setActiveTab(tab);
+    setSidebarOpen(false);
+  };
+
   return (
     <div className="flex h-screen bg-[#0a0f1e] text-gray-100 overflow-hidden">
-      <Sidebar
-        params={params}
-        onParamsChange={setParams}
-        epochs={epochs}
-        lookback={lookback}
-        onLookbackChange={setLookback}
-      />
+      {/* Mobile sidebar backdrop */}
+      {sidebarOpen && (
+        <div
+          className="fixed inset-0 bg-black/60 z-20 lg:hidden"
+          onClick={() => setSidebarOpen(false)}
+        />
+      )}
 
-      <div className="flex-1 flex flex-col overflow-hidden">
+      {/* Sidebar — hidden off-screen on mobile, visible on lg+ */}
+      <div className={`
+        fixed lg:static inset-y-0 left-0 z-30
+        transform transition-transform duration-200 ease-in-out
+        ${sidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}
+      `}>
+        <Sidebar
+          params={params}
+          onParamsChange={setParams}
+          epochs={epochs}
+          lookback={lookback}
+          onLookbackChange={setLookback}
+          onClose={() => setSidebarOpen(false)}
+        />
+      </div>
+
+      <div className="flex-1 flex flex-col overflow-hidden min-w-0">
         {/* Header bar */}
-        <div className="bg-[#111827] border-b border-gray-800 px-6 flex items-center gap-0 flex-shrink-0">
-          {TABS.map(tab => (
-            <button
-              key={tab}
-              onClick={() => setActiveTab(tab)}
-              className={`px-4 py-3 text-sm font-medium transition-colors border-b-2 -mb-px ${
-                activeTab === tab
-                  ? 'border-cyan-400 text-cyan-400'
-                  : 'border-transparent text-gray-400 hover:text-gray-200'
-              }`}
-            >
-              {tab}
-            </button>
-          ))}
+        <div className="bg-[#111827] border-b border-gray-800 px-3 sm:px-6 flex items-center gap-0 flex-shrink-0">
+          {/* Mobile menu button */}
+          <button
+            className="lg:hidden mr-3 p-1.5 text-gray-400 hover:text-gray-200 transition-colors flex-shrink-0"
+            onClick={() => setSidebarOpen(true)}
+            aria-label="Open settings"
+          >
+            <Menu size={20} />
+          </button>
+
+          {/* Tabs */}
+          <div className="flex items-center overflow-x-auto scrollbar-hide">
+            {TABS.map(tab => (
+              <button
+                key={tab}
+                onClick={() => handleTabChange(tab)}
+                className={`px-3 sm:px-4 py-3 text-xs sm:text-sm font-medium transition-colors border-b-2 -mb-px whitespace-nowrap flex-shrink-0 ${
+                  activeTab === tab
+                    ? 'border-cyan-400 text-cyan-400'
+                    : 'border-transparent text-gray-400 hover:text-gray-200'
+                }`}
+              >
+                {tab}
+              </button>
+            ))}
+          </div>
 
           {/* Right side: ticker + epoch status + GitHub link */}
-          <div className="ml-auto flex items-center gap-4 pr-2">
+          <div className="ml-auto flex items-center gap-2 sm:gap-4 pr-1 sm:pr-2 flex-shrink-0">
             <ZkcTicker onPriceLoad={handlePriceLoad} />
-            <span className="w-px h-4 bg-gray-700" />
-            {epochsLoading ? (
-              <span className="text-gray-500 text-xs animate-pulse">Loading epochs…</span>
-            ) : epochsError ? (
-              <span className="text-yellow-500 text-xs" title={epochsError}>⚠ {epochsError}</span>
-            ) : (
-              <span className="text-gray-600 text-xs">{epochs.length} epochs</span>
-            )}
-            <span className="w-px h-4 bg-gray-700" />
+            <span className="hidden sm:block w-px h-4 bg-gray-700" />
+            <span className="hidden sm:block">
+              {epochsLoading ? (
+                <span className="text-gray-500 text-xs animate-pulse">Loading…</span>
+              ) : epochsError ? (
+                <span className="text-yellow-500 text-xs" title={epochsError}>⚠</span>
+              ) : (
+                <span className="text-gray-600 text-xs">{epochs.length} epochs</span>
+              )}
+            </span>
+            <span className="hidden sm:block w-px h-4 bg-gray-700" />
             <a
               href="https://github.com/zerokrab/boundless-profit-explorer"
               target="_blank"
@@ -145,7 +183,7 @@ export default function App() {
         </div>
 
         {/* Tab content */}
-        <div className="flex-1 overflow-auto p-6 pb-0">
+        <div className="flex-1 overflow-auto pb-0">
           {epochsLoading ? (
             <div className="flex items-center justify-center h-full">
               <div className="text-center">
