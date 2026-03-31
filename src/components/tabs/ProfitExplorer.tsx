@@ -174,9 +174,9 @@ export default function ProfitExplorer({ results, params, liveZkcPrice }: Props)
                 labelStyle={{ color: '#e5e7eb' }}
               />
               <ReferenceLine x={0} stroke="#4b5563" />
-              <Bar dataKey="povw" name="povw" fill="#3b82f6" stackId="a" />
-              <Bar dataKey="market" name="market" fill="#8b5cf6" stackId="a" />
-              <Bar dataKey="cost" name="cost" fill="#f97316" stackId="a" />
+              <Bar dataKey="povw" name="POVW" fill="#3b82f6" stackId="revenue" radius={[0, 0, 0, 0]} />
+              <Bar dataKey="market" name="Market" fill="#8b5cf6" stackId="revenue" radius={[0, 4, 4, 0]} />
+              <Bar dataKey="cost" name="Cost" fill="#f97316" stackId="cost" radius={[0, 4, 4, 0]} />
             </BarChart>
           </ResponsiveContainer>
         </div>
