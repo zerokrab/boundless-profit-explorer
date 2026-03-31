@@ -82,6 +82,7 @@ export default function Breakeven({ params, liveZkcPrice }: Props) {
               }}
               contentStyle={{ background: '#1f2937', border: '1px solid #374151', borderRadius: 6 }}
               labelStyle={{ color: '#e5e7eb' }}
+              itemStyle={{ color: '#e5e7eb' }}
             />
             {/* Reference lines */}
             {liveZkcPrice !== null && (

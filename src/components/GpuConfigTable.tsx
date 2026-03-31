@@ -33,10 +33,10 @@ export default function GpuConfigTable({ configs, onChange }: Props) {
         <table className="w-full text-xs">
           <thead>
             <tr className="text-gray-400 border-b border-gray-700">
-              <th className="text-left pb-1 font-medium">Label</th>
-              <th className="text-left pb-1 font-medium px-1">#</th>
-              <th className="text-left pb-1 font-medium px-1">$/hr</th>
-              <th className="text-left pb-1 font-medium px-1">MHz</th>
+              <th className="text-left pb-1 font-medium" title="Display name for this GPU scenario in charts and tables.">Label</th>
+              <th className="text-left pb-1 font-medium px-1" title="Number of GPUs in this configuration.">#</th>
+              <th className="text-left pb-1 font-medium px-1" title="Hourly rental cost per GPU in USD.">$/hr</th>
+              <th className="text-left pb-1 font-medium px-1" title="Throughput per GPU in MHz (million cycles/second).">MHz</th>
               <th className="pb-1"></th>
             </tr>
           </thead>

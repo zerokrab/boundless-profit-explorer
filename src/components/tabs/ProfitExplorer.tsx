@@ -131,6 +131,7 @@ export default function ProfitExplorer({ results, params, liveZkcPrice }: Props)
                 formatter={(v: unknown) => [fmtUsd(Number(v)), 'Profit']}
                 contentStyle={{ background: '#1f2937', border: '1px solid #374151', borderRadius: 6 }}
                 labelStyle={{ color: '#e5e7eb' }}
+                itemStyle={{ color: '#e5e7eb' }}
               />
               <ReferenceLine x={0} stroke="#4b5563" />
               <Bar dataKey="profit" radius={[0, 4, 4, 0]}>
