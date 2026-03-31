@@ -43,37 +43,15 @@ const UPSTREAM = 'https://explorer.boundless.network/api/mining';
 const CACHE_KEY = 'epochs';
 const CACHE_TTL_SECONDS = 7200; // 2 hours
 
-/** Fetch ZKC price for a given date (YYYY-MM-DD) from the Explorer API */
-async function fetchZkcPrice(date: string): Promise<number> {
-  const res = await fetch(
-    `https://explorer.boundless.network/api/zkc_price?date=${date}`
-  );
-  if (!res.ok) return 0;
-  const json = await res.json<{ price: number }>();
-  return json.price ?? 0;
-}
-
-/** Format a Unix timestamp to YYYY-MM-DD */
-function toDateKey(unixSeconds: number): string {
-  return new Date(unixSeconds * 1000).toISOString().slice(0, 10);
-}
-
 /** Normalise raw MiningEntry → EpochData */
-async function normaliseEntries(entries: MiningEntry[]): Promise<EpochData[]> {
-  // Fetch all unique ZKC prices in parallel (one per epoch date)
-  const dateKeys = entries.map((e) => toDateKey(e.epoch_start_time));
-  const uniqueDates = [...new Set(dateKeys)];
-  const priceMap: Record<string, number> = {};
-  await Promise.all(
-    uniqueDates.map(async (date) => {
-      priceMap[date] = await fetchZkcPrice(date);
-    })
-  );
-
-  return entries.map((e, i) => ({
+function normaliseEntries(entries: MiningEntry[]): EpochData[] {
+  // zkc_price_usd is not used in any calculation (computePovwRate only needs
+  // mining_rewards_zkc and total_cycles), so we skip the per-epoch price
+  // fetches that would otherwise exhaust the Worker subrequest limit (~100 calls).
+  return entries.map((e) => ({
     epoch: e.epoch,
     timestamp: new Date(e.epoch_start_time * 1000).toISOString(),
-    zkc_price_usd: priceMap[dateKeys[i]] ?? 0,
+    zkc_price_usd: 0,
     // total_work is raw cycles as a bigint string
     total_cycles: Number(BigInt(e.total_work)),
     // total_capped_rewards is 1e18-scaled ZKC
@@ -102,7 +80,7 @@ export const onRequestGet: PagesFunction<Env> = async ({ env }) => {
     }
     const data = await upstream.json<MiningResponse>();
     const entries = data?.povwEpochs?.entries ?? [];
-    const normalised = await normaliseEntries(entries);
+    const normalised = normaliseEntries(entries);
     const body = JSON.stringify(normalised);
 
     // 3. Store in KV with TTL
