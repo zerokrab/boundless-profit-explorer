@@ -63,6 +63,7 @@ export default function Scenarios({ results, liveZkcPrice }: Props) {
                     tick={{ fill: '#9ca3af', fontSize: 10 }}
                     axisLine={{ stroke: '#374151' }}
                     tickLine={false}
+                    label={{ value: 'ZKC Price (USD)', position: 'insideBottom', offset: -2, fill: '#9ca3af', fontSize: 11 }}
                   />
                   <YAxis
                     tickFormatter={fmtUsd}
@@ -70,6 +71,7 @@ export default function Scenarios({ results, liveZkcPrice }: Props) {
                     axisLine={false}
                     tickLine={false}
                     width={60}
+                    label={{ value: 'Profit per Epoch (USD)', angle: -90, position: 'insideLeft', fill: '#9ca3af', fontSize: 11, dx: -2 }}
                   />
                   <Tooltip
                     formatter={(v: unknown, name: unknown) => [fmtUsd(Number(v)), String(name)]}
