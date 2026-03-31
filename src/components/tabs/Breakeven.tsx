@@ -13,11 +13,11 @@ interface Props {
 const fmtUsd = (v: number) => `$${v.toFixed(4)}`;
 const fmtUsdShort = (v: number) => `$${v.toFixed(2)}`;
 
-function breakColor(v: number | null): string {
+function breakColor(v: number | null, liveZkcPrice: number | null): string {
   if (v === null) return '#ef4444';
-  if (v < 0.10) return '#22c55e';
-  if (v <= 0.50) return '#eab308';
-  return '#ef4444';
+  if (liveZkcPrice !== null) return v <= liveZkcPrice ? '#22c55e' : '#ef4444';
+  // fallback when live price not loaded: green if reachable, red if not
+  return '#22c55e';
 }
 
 export default function Breakeven({ params, liveZkcPrice }: Props) {
@@ -40,15 +40,11 @@ export default function Breakeven({ params, liveZkcPrice }: Props) {
       <div className="flex gap-4 mb-4 text-xs">
         <span className="flex items-center gap-1.5">
           <span className="w-3 h-3 rounded-sm inline-block bg-green-500"></span>
-          <span className="text-gray-400">Profitable</span>
-        </span>
-        <span className="flex items-center gap-1.5">
-          <span className="w-3 h-3 rounded-sm inline-block bg-yellow-500"></span>
-          <span className="text-gray-400">Moderate</span>
+          <span className="text-gray-400">Profitable at current price</span>
         </span>
         <span className="flex items-center gap-1.5">
           <span className="w-3 h-3 rounded-sm inline-block bg-red-500"></span>
-          <span className="text-gray-400">Challenging / unreachable</span>
+          <span className="text-gray-400">Not profitable at current price</span>
         </span>
         {liveZkcPrice !== null && (
           <span className="flex items-center gap-1.5">
@@ -93,7 +89,7 @@ export default function Breakeven({ params, liveZkcPrice }: Props) {
             )}
             <Bar dataKey="breakeven" name="breakeven" radius={[0, 4, 4, 0]}>
               {chartData.map((entry, i) => (
-                <Cell key={i} fill={breakColor(entry.breakeven)} />
+                <Cell key={i} fill={breakColor(entry.breakeven, liveZkcPrice)} />
               ))}
             </Bar>
             <Bar dataKey="unreachable" name="unreachable" fill="#ef4444" radius={[0, 4, 4, 0]} opacity={0.4} />
@@ -116,18 +112,16 @@ export default function Breakeven({ params, liveZkcPrice }: Props) {
             {breakevenData.map(b => (
               <tr key={b.scenario} className="border-b border-gray-800">
                 <td className="py-2 text-gray-200">{b.scenario}</td>
-                <td className="py-2 text-right font-mono" style={{ color: breakColor(b.breakeven_zkc) }}>
+                <td className="py-2 text-right font-mono" style={{ color: breakColor(b.breakeven_zkc, liveZkcPrice) }}>
                   {b.breakeven_zkc !== null ? fmtUsd(b.breakeven_zkc) : '—'}
                 </td>
                 <td className="py-2 text-right text-xs">
                   {b.breakeven_zkc === null ? (
-                    <span className="text-red-400">Unreachable</span>
-                  ) : b.breakeven_zkc < 0.10 ? (
-                    <span className="text-green-400">Favorable</span>
-                  ) : b.breakeven_zkc <= 0.50 ? (
-                    <span className="text-yellow-400">Moderate</span>
+                    <span className="text-red-400">Not profitable</span>
+                  ) : liveZkcPrice !== null && b.breakeven_zkc <= liveZkcPrice ? (
+                    <span className="text-green-400">Profitable</span>
                   ) : (
-                    <span className="text-red-400">Challenging</span>
+                    <span className="text-red-400">Not profitable</span>
                   )}
                 </td>
               </tr>

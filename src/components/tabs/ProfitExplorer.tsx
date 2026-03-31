@@ -86,18 +86,20 @@ export default function ProfitExplorer({ results, params, liveZkcPrice }: Props)
             const pct = (liveZkcPrice - params.zkc_price_min) / (params.zkc_price_max - params.zkc_price_min) * 100;
             return (
               <div
-                className="absolute top-full mt-0.5 flex flex-col items-center pointer-events-none"
-                style={{ left: `${pct}%`, transform: 'translateX(-50%)' }}
+                className="absolute flex flex-col items-center pointer-events-none"
+                style={{ left: `${pct}%`, transform: 'translateX(-50%)', top: '100%', marginTop: '2px' }}
               >
-                <div className="w-px h-1.5 bg-amber-400" />
+                <div className="w-px h-2 bg-amber-400" />
                 <span className="text-amber-400 font-mono whitespace-nowrap" style={{ fontSize: '10px' }}>
-                  ${liveZkcPrice.toFixed(4)}
+                  Current Price: ${liveZkcPrice.toFixed(4)}
                 </span>
               </div>
             );
           })()}
         </div>
-        <div className="flex justify-between text-gray-600 text-xs mt-5">
+        {/* Extra space reserved for the current-price marker when visible */}
+        <div className="h-8" />
+        <div className="flex justify-between text-gray-600 text-xs -mt-2">
           <span>${params.zkc_price_min.toFixed(3)}</span>
           <span>${params.zkc_price_max.toFixed(3)}</span>
         </div>
