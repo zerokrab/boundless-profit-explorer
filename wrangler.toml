@@ -1,5 +1,8 @@
 name = "boundless-profit-explorer"
 compatibility_date = "2024-01-01"
+pages_build_output_dir = "./dist"
 
-[site]
-bucket = "./dist"
+[[kv_namespaces]]
+binding = "EPOCHS_CACHE"
+id = "32b67df0d6a34977883df5c6994f1f45"
+preview_id = "9738c9525a1845f79ac3b0bd72e91ba0"
