@@ -7,6 +7,7 @@ import type { ModelParams } from '../../lib/compute';
 
 interface Props {
   params: ModelParams;
+  liveZkcPrice: number | null;
 }
 
 const fmtUsd = (v: number) => `$${v.toFixed(4)}`;
@@ -19,7 +20,7 @@ function breakColor(v: number | null): string {
   return '#ef4444';
 }
 
-export default function Breakeven({ params }: Props) {
+export default function Breakeven({ params, liveZkcPrice }: Props) {
   const breakevenData = computeBreakeven(params);
 
   const chartData = breakevenData.map(b => ({
@@ -86,6 +87,9 @@ export default function Breakeven({ params }: Props) {
             <ReferenceLine x={0.10} stroke="#22c55e" strokeDasharray="4 3" label={{ value: '$0.10', fill: '#22c55e', fontSize: 10, position: 'top' }} />
             <ReferenceLine x={0.50} stroke="#eab308" strokeDasharray="4 3" label={{ value: '$0.50', fill: '#eab308', fontSize: 10, position: 'top' }} />
             <ReferenceLine x={currentZkcPrice} stroke="#22d3ee" strokeDasharray="3 3" label={{ value: `Current $${currentZkcPrice.toFixed(3)}`, fill: '#22d3ee', fontSize: 10, position: 'top' }} />
+            {liveZkcPrice !== null && (
+              <ReferenceLine x={liveZkcPrice} stroke="#f59e0b" strokeDasharray="4 3" label={{ value: `Live $${liveZkcPrice.toFixed(4)}`, fill: '#f59e0b', fontSize: 10, position: 'insideTopRight' }} />
+            )}
             <Bar dataKey="breakeven" name="breakeven" radius={[0, 4, 4, 0]}>
               {chartData.map((entry, i) => (
                 <Cell key={i} fill={breakColor(entry.breakeven)} />

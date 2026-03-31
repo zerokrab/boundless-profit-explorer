@@ -6,12 +6,13 @@ import type { ScenarioResult } from '../../lib/compute';
 
 interface Props {
   results: ScenarioResult[];
+  liveZkcPrice: number | null;
 }
 
 const fmtUsd = (v: number) => `$${v.toFixed(2)}`;
 const fmtUsdX = (v: number) => `$${v.toFixed(3)}`;
 
-export default function Scenarios({ results }: Props) {
+export default function Scenarios({ results, liveZkcPrice }: Props) {
   const scenarios = [...new Set(results.map(r => r.scenario))];
 
   return (
@@ -77,6 +78,14 @@ export default function Scenarios({ results }: Props) {
                     labelStyle={{ color: '#e5e7eb' }}
                   />
                   <ReferenceLine y={0} stroke="#4b5563" strokeDasharray="4 3" />
+                  {liveZkcPrice !== null && (
+                    <ReferenceLine
+                      x={parseFloat(liveZkcPrice.toFixed(4))}
+                      stroke="#f59e0b"
+                      strokeDasharray="4 3"
+                      label={{ value: 'Live', position: 'top', fill: '#f59e0b', fontSize: 9 }}
+                    />
+                  )}
                   <Line
                     type="monotone"
                     dataKey="profit"

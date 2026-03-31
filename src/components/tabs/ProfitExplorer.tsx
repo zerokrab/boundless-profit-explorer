@@ -9,6 +9,7 @@ import type { ModelParams, ScenarioResult } from '../../lib/compute';
 interface Props {
   results: ScenarioResult[];
   params: ModelParams;
+  liveZkcPrice: number | null;
 }
 
 const fmtUsd = (v: number) => `$${v.toFixed(2)}`;
@@ -17,7 +18,7 @@ const fmtUsdShort = (v: number) => {
   return `$${v.toFixed(0)}`;
 };
 
-export default function ProfitExplorer({ results, params }: Props) {
+export default function ProfitExplorer({ results, params, liveZkcPrice }: Props) {
   const prices = useMemo(() => computeZkcPrices(params.zkc_price_min, params.zkc_price_max, params.zkc_price_steps), [params]);
   const [priceIdx, setPriceIdx] = useState(0);
   const selectedPrice = prices[priceIdx] ?? params.zkc_price_min;
@@ -65,7 +66,21 @@ export default function ProfitExplorer({ results, params }: Props) {
       <div className="bg-[#111827] rounded-lg p-4 mb-6 border border-gray-800">
         <div className="flex items-center justify-between mb-2">
           <span className="text-gray-400 text-sm">ZKC Price</span>
-          <span className="text-cyan-400 font-mono text-lg font-semibold">${selectedPrice.toFixed(4)}</span>
+          <div className="flex items-center gap-3">
+            {liveZkcPrice !== null && (
+              <button
+                onClick={() => {
+                  const closest = prices.reduce((best, p, i) =>
+                    Math.abs(p - liveZkcPrice) < Math.abs(prices[best] - liveZkcPrice) ? i : best, 0);
+                  setPriceIdx(closest);
+                }}
+                className="text-xs text-amber-400 hover:text-amber-300 transition-colors border border-amber-800 hover:border-amber-600 rounded px-2 py-0.5"
+              >
+                Snap to live ${liveZkcPrice.toFixed(4)}
+              </button>
+            )}
+            <span className="text-cyan-400 font-mono text-lg font-semibold">${selectedPrice.toFixed(4)}</span>
+          </div>
         </div>
         <input
           type="range"

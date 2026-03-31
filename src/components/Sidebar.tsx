@@ -9,13 +9,14 @@ interface Props {
   epochs: EpochData[];
   lookback: number;
   onLookbackChange: (n: number) => void;
+  liveZkcPrice: number | null;
 }
 
 const labelCls = "block text-xs text-gray-400 mb-1 font-medium";
 const inputCls = "w-full bg-[#0a0f1e] border border-gray-700 rounded px-2 py-1 text-gray-100 font-mono text-sm focus:outline-none focus:border-cyan-500";
 const sectionCls = "mb-4";
 
-export default function Sidebar({ params, onParamsChange, epochs, lookback, onLookbackChange }: Props) {
+export default function Sidebar({ params, onParamsChange, epochs, lookback, onLookbackChange, liveZkcPrice }: Props) {
   const set = <K extends keyof ModelParams>(key: K, value: ModelParams[K]) => {
     onParamsChange({ ...params, [key]: value });
   };
@@ -50,7 +51,26 @@ export default function Sidebar({ params, onParamsChange, epochs, lookback, onLo
 
         {/* ZKC Price Range */}
         <div className={sectionCls}>
-          <h2 className="text-gray-300 text-xs font-semibold uppercase tracking-wider mb-2">ZKC Price Range</h2>
+          <div className="flex items-center justify-between mb-2">
+            <h2 className="text-gray-300 text-xs font-semibold uppercase tracking-wider">ZKC Price Range</h2>
+            {liveZkcPrice !== null && (
+              <button
+                onClick={() => {
+                  // Centre the range on the live price with a reasonable spread
+                  const spread = Math.max(liveZkcPrice * 2, 0.1);
+                  onParamsChange({
+                    ...params,
+                    zkc_price_min: Math.max(0, parseFloat((liveZkcPrice - spread / 2).toFixed(4))),
+                    zkc_price_max: parseFloat((liveZkcPrice + spread / 2).toFixed(4)),
+                  });
+                }}
+                className="text-xs text-cyan-400 hover:text-cyan-300 transition-colors border border-cyan-800 hover:border-cyan-600 rounded px-2 py-0.5"
+                title={`Centre range on live price ($${liveZkcPrice.toFixed(4)})`}
+              >
+                Use live ${liveZkcPrice.toFixed(4)}
+              </button>
+            )}
+          </div>
           <div className="grid grid-cols-3 gap-2">
             <div>
               <label className={labelCls}>Min ($)</label>
