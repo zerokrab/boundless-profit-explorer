@@ -76,7 +76,7 @@ export default function ProfitExplorer({ results, params, liveZkcPrice }: Props)
                 }}
                 className="text-xs text-amber-400 hover:text-amber-300 transition-colors border border-amber-800 hover:border-amber-600 rounded px-2 py-0.5"
               >
-                Snap to live ${liveZkcPrice.toFixed(4)}
+                Use current price (${liveZkcPrice.toFixed(4)})
               </button>
             )}
             <span className="text-cyan-400 font-mono text-lg font-semibold">${selectedPrice.toFixed(4)}</span>
