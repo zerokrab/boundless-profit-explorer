@@ -3,6 +3,7 @@ import { computeResults } from './lib/compute';
 import type { ModelParams } from './lib/compute';
 import { computePovwRate } from './lib/parseEpochs';
 import type { EpochData } from './lib/parseEpochs';
+import { useLocalStorage } from './lib/useLocalStorage';
 import Sidebar from './components/Sidebar';
 import ZkcTicker from './components/ZkcTicker';
 import ProfitExplorer from './components/tabs/ProfitExplorer';
@@ -13,26 +14,24 @@ const DEFAULT_LOOKBACK = 10;
 
 const DEFAULT_PARAMS: ModelParams = {
   gpuConfigs: [
-    { id: crypto.randomUUID(), label: 'RTX5090 x8', num_gpus: 8, usd_per_hour: 0.50, mhz: 1.1 },
-    { id: crypto.randomUUID(), label: 'RTX5090 x4', num_gpus: 4, usd_per_hour: 0.50, mhz: 1.1 },
-    { id: crypto.randomUUID(), label: 'RTX4090 x8', num_gpus: 8, usd_per_hour: 0.35, mhz: 0.7 },
-    { id: crypto.randomUUID(), label: 'H100 x4', num_gpus: 4, usd_per_hour: 3.50, mhz: 1.8 },
+    { id: 'gpu-1', label: 'RTX5090 x8', num_gpus: 8, usd_per_hour: 0.50, mhz: 1.1 },
+    { id: 'gpu-2', label: 'RTX4090 x8', num_gpus: 8, usd_per_hour: 0.35, mhz: 0.7 },
   ],
-  zkc_price_min: 0.025,
-  zkc_price_max: 1.0,
+  zkc_price_min: 0,
+  zkc_price_max: 0.5,
   zkc_price_steps: 20,
   market_reward_usd_per_bcycle: 0.07,
   market_order_util: 0.5,
   fixed_cost_monthly_usd: 0,
-  povw_zkc_per_mhz_per_epoch: 0,
+  povw_zkc_per_mhz_per_epoch: 0, // always recomputed from live epoch data
 };
 
 const TABS = ['Profit Explorer', 'Break-even', 'Scenarios'] as const;
 type Tab = typeof TABS[number];
 
 export default function App() {
-  const [params, setParams] = useState<ModelParams>(DEFAULT_PARAMS);
-  const [lookback, setLookback] = useState(DEFAULT_LOOKBACK);
+  const [params, setParams] = useLocalStorage<ModelParams>('params', DEFAULT_PARAMS);
+  const [lookback, setLookback] = useLocalStorage<number>('lookback', DEFAULT_LOOKBACK);
   const [activeTab, setActiveTab] = useState<Tab>('Profit Explorer');
   const [epochs, setEpochs] = useState<EpochData[]>([]);
   const [epochsLoading, setEpochsLoading] = useState(true);
