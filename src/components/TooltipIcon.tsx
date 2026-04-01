@@ -2,7 +2,7 @@ import { useState, useId } from 'react';
 import { Info } from 'lucide-react';
 
 interface Props {
-  text: string;
+  text: React.ReactNode;
 }
 
 export default function TooltipIcon({ text }: Props) {

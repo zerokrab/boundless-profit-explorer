@@ -126,7 +126,7 @@ export default function Sidebar({ params, onParamsChange, epochs, lookback, onLo
           </div>
           <div className="mb-3">
             <label className={labelCls}>
-              <span>Market Utilization<TooltipIcon text="Percent of total cycles performed on the market." /></span> : <span className="text-cyan-400 font-mono">{Math.round(params.market_order_util * 100)}%</span>
+              <span>Market Utilization<TooltipIcon text={<>Percent of total cycles performed on the market. To calculate this for a particular prover, see <a href="https://github.com/zerokrab/boundless-market-util" target="_blank" rel="noopener noreferrer" className="text-cyan-400 underline hover:text-cyan-300">boundless-market-util</a>.</>} /></span> : <span className="text-cyan-400 font-mono">{Math.round(params.market_order_util * 100)}%</span>
             </label>
             <input
               type="range"
