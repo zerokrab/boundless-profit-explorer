@@ -15,7 +15,7 @@ const DEFAULT_LOOKBACK = 10;
 
 const DEFAULT_PARAMS: ModelParams = {
   gpuConfigs: [
-    { id: 'gpu-1', label: 'RTX5090 x8', num_gpus: 8, usd_per_hour: 0.50, mhz: 1.1 },
+    { id: 'gpu-1', label: 'RTX5090 x8', num_gpus: 8, usd_per_hour: 0.75, mhz: 1.1 },
     { id: 'gpu-2', label: 'RTX4090 x8', num_gpus: 8, usd_per_hour: 0.35, mhz: 0.7 },
   ],
   zkc_price_min: 0,
