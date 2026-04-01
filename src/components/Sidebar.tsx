@@ -3,6 +3,7 @@ import type { GpuConfig, ModelParams } from '../lib/compute';
 import { computePovwRate } from '../lib/parseEpochs';
 import type { EpochData } from '../lib/parseEpochs';
 import GpuConfigTable from './GpuConfigTable';
+import TooltipIcon from './TooltipIcon';
 
 interface Props {
   params: ModelParams;
@@ -108,7 +109,7 @@ export default function Sidebar({ params, onParamsChange, epochs, lookback, onLo
           <h2 className="text-gray-300 text-xs font-semibold uppercase tracking-wider mb-2">Market Parameters</h2>
           <div className="mb-3">
             <label className={labelCls}>
-              <span title="Average market payout in USD per billion cycles.">Market Reward</span>: <span className="text-cyan-400 font-mono">${params.market_reward_usd_per_bcycle.toFixed(2)}/Bcycle</span>
+              <span>Market Reward <TooltipIcon text="Average market payout in USD per billion cycles." /></span>: <span className="text-cyan-400 font-mono">${params.market_reward_usd_per_bcycle.toFixed(2)}/Bcycle</span>
             </label>
             <input
               type="range"
@@ -125,7 +126,7 @@ export default function Sidebar({ params, onParamsChange, epochs, lookback, onLo
           </div>
           <div className="mb-3">
             <label className={labelCls}>
-              <span title="Percent of total cycles performed on the market.">Market Utilization</span>: <span className="text-cyan-400 font-mono">{Math.round(params.market_order_util * 100)}%</span>
+              <span>Market Utilization <TooltipIcon text="Percent of total cycles performed on the market." /></span>: <span className="text-cyan-400 font-mono">{Math.round(params.market_order_util * 100)}%</span>
             </label>
             <input
               type="range"
@@ -165,7 +166,9 @@ export default function Sidebar({ params, onParamsChange, epochs, lookback, onLo
             </div>
           </div>
           <div>
-            <label className={labelCls} title="Number of most recent epochs used to compute the POVW reward rate.">Lookback Epochs</label>
+            <label className={labelCls}>
+              Lookback Epochs <TooltipIcon text="Number of most recent epochs used to compute the POVW reward rate." />
+            </label>
             <input
               className={inputCls}
               type="number"
