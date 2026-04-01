@@ -3,6 +3,7 @@ import type { GpuConfig, ModelParams } from '../lib/compute';
 import { computePovwRate } from '../lib/parseEpochs';
 import type { EpochData } from '../lib/parseEpochs';
 import GpuConfigTable from './GpuConfigTable';
+import TooltipIcon from './TooltipIcon';
 
 interface Props {
   params: ModelParams;
@@ -30,10 +31,10 @@ export default function Sidebar({ params, onParamsChange, epochs, lookback, onLo
   };
 
   return (
-    <div className="w-80 min-w-[320px] bg-[#111827] border-r border-gray-800 h-screen overflow-y-auto flex-shrink-0">
+    <div className="w-80 min-w-[320px] bg-[#111827] border-r border-gray-800 h-screen overflow-y-auto shrink-0">
       <div className="p-4">
         <div className="flex items-center gap-2 mb-6">
-          <div className="w-2 h-2 rounded-full bg-cyan-400 flex-shrink-0"></div>
+          <div className="w-2 h-2 rounded-full bg-cyan-400 shrink-0"></div>
           <h1 className="text-cyan-400 font-semibold text-sm tracking-wider uppercase flex-1">
             Boundless Profit Explorer
           </h1>
@@ -41,7 +42,7 @@ export default function Sidebar({ params, onParamsChange, epochs, lookback, onLo
           {onClose && (
             <button
               onClick={onClose}
-              className="lg:hidden p-1 text-gray-500 hover:text-gray-300 transition-colors flex-shrink-0"
+              className="lg:hidden p-1 text-gray-500 hover:text-gray-300 transition-colors shrink-0"
               aria-label="Close settings"
             >
               <X size={18} />
@@ -108,7 +109,7 @@ export default function Sidebar({ params, onParamsChange, epochs, lookback, onLo
           <h2 className="text-gray-300 text-xs font-semibold uppercase tracking-wider mb-2">Market Parameters</h2>
           <div className="mb-3">
             <label className={labelCls}>
-              <span title="Average market payout in USD per billion cycles.">Market Reward</span>: <span className="text-cyan-400 font-mono">${params.market_reward_usd_per_bcycle.toFixed(2)}/Bcycle</span>
+              <span>Market Reward<TooltipIcon text="Average market payout in USD per billion cycles." /></span> : <span className="text-cyan-400 font-mono">${params.market_reward_usd_per_bcycle.toFixed(2)}/Bcycle</span>
             </label>
             <input
               type="range"
@@ -125,7 +126,7 @@ export default function Sidebar({ params, onParamsChange, epochs, lookback, onLo
           </div>
           <div className="mb-3">
             <label className={labelCls}>
-              <span title="Percent of total cycles performed on the market.">Market Utilization</span>: <span className="text-cyan-400 font-mono">{Math.round(params.market_order_util * 100)}%</span>
+              <span>Market Utilization<TooltipIcon text={<>Percent of total cycles performed on the market. To calculate this for a particular prover, see <a href="https://github.com/zerokrab/boundless-market-util" target="_blank" rel="noopener noreferrer" className="text-cyan-400 underline hover:text-cyan-300">boundless-market-util</a>.</>} /></span> : <span className="text-cyan-400 font-mono">{Math.round(params.market_order_util * 100)}%</span>
             </label>
             <input
               type="range"
@@ -165,7 +166,9 @@ export default function Sidebar({ params, onParamsChange, epochs, lookback, onLo
             </div>
           </div>
           <div>
-            <label className={labelCls} title="Number of most recent epochs used to compute the POVW reward rate.">Lookback Epochs</label>
+            <label className={labelCls}>
+              Lookback Epochs <TooltipIcon text="Number of most recent epochs used to compute the POVW reward rate." />
+            </label>
             <input
               className={inputCls}
               type="number"
