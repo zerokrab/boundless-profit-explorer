@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect, useRef } from 'react';
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip,
   ResponsiveContainer, Cell, ReferenceLine
@@ -20,7 +20,32 @@ const fmtUsdShort = (v: number) => {
 
 export default function ProfitExplorer({ results, params, liveZkcPrice }: Props) {
   const prices = useMemo(() => computeZkcPrices(params.zkc_price_min, params.zkc_price_max, params.zkc_price_steps), [params]);
-  const [priceIdx, setPriceIdx] = useState(0);
+
+  // Default to the step closest to the live price; fall back to the midpoint
+  const defaultIdx = useMemo(() => {
+    if (liveZkcPrice !== null) {
+      let best = 0;
+      let bestDist = Infinity;
+      prices.forEach((p, i) => {
+        const d = Math.abs(p - liveZkcPrice);
+        if (d < bestDist) { bestDist = d; best = i; }
+      });
+      return best;
+    }
+    return Math.floor(prices.length / 2);
+  }, [prices, liveZkcPrice]);
+
+  const [priceIdx, setPriceIdx] = useState(defaultIdx);
+
+  // Snap to live price the first time it arrives — never again after that
+  const hasSnapped = useRef(false);
+  useEffect(() => {
+    if (!hasSnapped.current && liveZkcPrice !== null) {
+      hasSnapped.current = true;
+      setPriceIdx(defaultIdx);
+    }
+  }, [liveZkcPrice, defaultIdx]);
+
   const selectedPrice = prices[priceIdx] ?? params.zkc_price_min;
 
   // Filter results at selected price (closest match)
