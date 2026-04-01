@@ -16,13 +16,13 @@ export default function Scenarios({ results, liveZkcPrice }: Props) {
   const scenarios = [...new Set(results.map(r => r.scenario))];
 
   return (
-    <div className="p-6">
-      <div className="mb-6">
+    <div className="p-3 sm:p-6">
+      <div className="mb-4 sm:mb-6">
         <h2 className="text-gray-100 text-lg font-semibold mb-1">Profit Scenarios</h2>
         <p className="text-gray-400 text-sm">Profit per epoch vs ZKC price for each GPU configuration.</p>
       </div>
 
-      <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 xl:grid-cols-2 gap-4 sm:gap-6">
         {scenarios.map(scenario => {
           const data = results
             .filter(r => r.scenario === scenario)
@@ -40,10 +40,10 @@ export default function Scenarios({ results, liveZkcPrice }: Props) {
           const isEverProfitable = maxProfit >= 0;
 
           return (
-            <div key={scenario} className="bg-[#111827] rounded-lg p-4 border border-gray-800">
-              <div className="flex items-center justify-between mb-3">
+            <div key={scenario} className="bg-[#111827] rounded-lg p-3 sm:p-4 border border-gray-800">
+              <div className="flex items-start sm:items-center justify-between mb-3 gap-2">
                 <h3 className="text-gray-200 text-sm font-semibold">{scenario}</h3>
-                <div className="flex items-center gap-2 text-xs">
+                <div className="flex items-center gap-2 text-xs flex-shrink-0">
                   {isEverProfitable ? (
                     <span className="text-green-400 bg-green-900/30 px-2 py-0.5 rounded">Profitable range exists</span>
                   ) : (
@@ -54,24 +54,23 @@ export default function Scenarios({ results, liveZkcPrice }: Props) {
               <div className="text-xs text-gray-500 mb-3 font-mono">
                 Range: {fmtUsd(minProfit)} → {fmtUsd(maxProfit)} per epoch
               </div>
-              <ResponsiveContainer width="100%" height={240}>
-                <LineChart data={data} margin={{ left: 10, right: 10, top: 5, bottom: 5 }}>
+              <ResponsiveContainer width="100%" height={220}>
+                <LineChart data={data} margin={{ left: 5, right: 10, top: 5, bottom: 20 }}>
                   <CartesianGrid strokeDasharray="3 3" stroke="#1f2937" />
                   <XAxis
                     dataKey="price"
                     tickFormatter={fmtUsdX}
-                    tick={{ fill: '#9ca3af', fontSize: 10 }}
+                    tick={{ fill: '#9ca3af', fontSize: 9 }}
                     axisLine={{ stroke: '#374151' }}
                     tickLine={false}
-                    label={{ value: 'ZKC Price (USD)', position: 'insideBottom', offset: -2, fill: '#9ca3af', fontSize: 11 }}
+                    label={{ value: 'ZKC Price (USD)', position: 'insideBottom', offset: -10, fill: '#9ca3af', fontSize: 10 }}
                   />
                   <YAxis
                     tickFormatter={fmtUsd}
-                    tick={{ fill: '#9ca3af', fontSize: 10 }}
+                    tick={{ fill: '#9ca3af', fontSize: 9 }}
                     axisLine={false}
                     tickLine={false}
-                    width={60}
-                    label={{ value: 'Profit per Epoch (USD)', angle: -90, position: 'insideLeft', fill: '#9ca3af', fontSize: 11, dx: -2 }}
+                    width={55}
                   />
                   <Tooltip
                     formatter={(v: unknown, name: unknown) => [fmtUsd(Number(v)), String(name)]}

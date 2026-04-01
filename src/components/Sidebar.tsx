@@ -1,3 +1,4 @@
+import { X } from 'lucide-react';
 import type { GpuConfig, ModelParams } from '../lib/compute';
 import { computePovwRate } from '../lib/parseEpochs';
 import type { EpochData } from '../lib/parseEpochs';
@@ -9,13 +10,14 @@ interface Props {
   epochs: EpochData[];
   lookback: number;
   onLookbackChange: (n: number) => void;
+  onClose?: () => void;
 }
 
 const labelCls = "block text-xs text-gray-400 mb-1 font-medium";
 const inputCls = "w-full bg-[#0a0f1e] border border-gray-700 rounded px-2 py-1 text-gray-100 font-mono text-sm focus:outline-none focus:border-cyan-500";
 const sectionCls = "mb-4";
 
-export default function Sidebar({ params, onParamsChange, epochs, lookback, onLookbackChange }: Props) {
+export default function Sidebar({ params, onParamsChange, epochs, lookback, onLookbackChange, onClose }: Props) {
   const set = <K extends keyof ModelParams>(key: K, value: ModelParams[K]) => {
     onParamsChange({ ...params, [key]: value });
   };
@@ -31,10 +33,20 @@ export default function Sidebar({ params, onParamsChange, epochs, lookback, onLo
     <div className="w-80 min-w-[320px] bg-[#111827] border-r border-gray-800 h-screen overflow-y-auto flex-shrink-0">
       <div className="p-4">
         <div className="flex items-center gap-2 mb-6">
-          <div className="w-2 h-2 rounded-full bg-cyan-400"></div>
-          <h1 className="text-cyan-400 font-semibold text-sm tracking-wider uppercase">
+          <div className="w-2 h-2 rounded-full bg-cyan-400 flex-shrink-0"></div>
+          <h1 className="text-cyan-400 font-semibold text-sm tracking-wider uppercase flex-1">
             Boundless Profit Explorer
           </h1>
+          {/* Close button — visible on mobile only */}
+          {onClose && (
+            <button
+              onClick={onClose}
+              className="lg:hidden p-1 text-gray-500 hover:text-gray-300 transition-colors flex-shrink-0"
+              aria-label="Close settings"
+            >
+              <X size={18} />
+            </button>
+          )}
         </div>
 
         {/* GPU Configs */}
