@@ -112,17 +112,13 @@ export default function Sidebar({ params, onParamsChange, epochs, lookback, onLo
               <span>Market Reward<TooltipIcon text="Average market payout in USD per billion cycles." /></span> : <span className="text-cyan-400 font-mono">${params.market_reward_usd_per_bcycle.toFixed(2)}/Bcycle</span>
             </label>
             <input
-              type="range"
-              min={0.01}
-              max={0.20}
+              className={inputCls}
+              type="number"
+              min={0}
               step={0.01}
               value={params.market_reward_usd_per_bcycle}
               onChange={e => set('market_reward_usd_per_bcycle', Number(e.target.value))}
-              className="w-full accent-cyan-500"
             />
-            <div className="flex justify-between text-gray-600 text-xs mt-0.5">
-              <span>$0.01</span><span>$0.20</span>
-            </div>
           </div>
           <div className="mb-3">
             <label className={labelCls}>
