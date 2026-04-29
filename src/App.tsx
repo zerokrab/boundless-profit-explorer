@@ -21,7 +21,7 @@ const DEFAULT_PARAMS: ModelParams = {
   zkc_price_min: 0,
   zkc_price_max: 0.5,
   zkc_price_steps: 20,
-  market_reward_usd_per_bcycle: 0.07,
+  market_reward_usd_per_bcycle: 0.10,
   market_order_util: 0.5,
   fixed_cost_monthly_usd: 0,
   povw_zkc_per_mhz_per_epoch: 0, // always recomputed from live epoch data
