@@ -2,16 +2,16 @@
  * GET /api/market-stats
  *
  * Fetches daily market statistics from the Boundless Explorer's RSC endpoint,
- * extracts the time-series JSON, and returns a clean array of daily buckets
- * with total_cycles, total_program_cycles (PoVW), and derived market_cycles.
+ * extracts the time-series JSON, and returns a clean array of daily buckets.
+ *
+ * Key terminology:
+ *   total_cycles        = all computation cycles across the network
+ *   total_program_cycles = cycles from orders on the open market (ZK proof requests)
+ *   povwCycles          = total_cycles - total_program_cycles (Proof-of-Verifiable-Work mining)
  *
  * Data source: https://explorer.boundless.network/base/stats (RSC flight data)
  *
  * KV binding: EPOCHS_CACHE (key: "market-stats")
- *
- * Response headers:
- *   X-Cache: HIT | MISS | STALE
- *   Cache-Control: public, max-age=7200
  */
 
 interface Env {
@@ -36,14 +36,14 @@ interface StatsBucket {
 
 /** Cleaned bucket returned to the frontend. */
 export interface MarketStatsBucket {
-  date: string;             // ISO date string (YYYY-MM-DD)
-  totalCycles: number;      // all computation cycles
-  programCycles: number;    // PoVW cycles only
-  marketCycles: number;     // totalCycles - programCycles (open market)
-  pctOutsideMarket: number; // marketCycles / totalCycles * 100
+  date: string;                // YYYY-MM-DD
+  totalCycles: number;         // all computation cycles
+  povwCycles: number;          // PoVW mining cycles  (= totalCycles - marketCycles)
+  marketCycles: number;       // open-market program cycles (= total_program_cycles)
+  pctMarket: number;           // marketCycles / totalCycles * 100
   ordersLocked: number;
   ordersFulfilled: number;
-  fulfillmentRate: number;  // 0-100
+  fulfillmentRate: number;    // 0-100
 }
 
 const UPSTREAM = 'https://explorer.boundless.network/base/stats';
@@ -56,10 +56,6 @@ const CACHE_TTL_SECONDS = 7200; // 2 hours
  * We grep for the array that starts with {"chain_id":8453 and parse it.
  */
 function extractStatsArray(rscText: string): StatsBucket[] {
-  // The RSC payload contains a JSON array of stats buckets.
-  // Find the outermost JSON array containing "chain_id":8453 entries.
-  // Strategy: locate the first [{"chain_id" and then find the matching ].
-
   const startMarker = '[{"chain_id":';
   const startIdx = rscText.indexOf(startMarker);
   if (startIdx === -1) {
@@ -95,26 +91,26 @@ function normaliseBuckets(buckets: StatsBucket[]): MarketStatsBucket[] {
     .filter(b => Number(b.total_cycles) > 0) // skip empty buckets
     .map(b => {
       const totalCycles = Number(BigInt(b.total_cycles));
-      const programCycles = Number(BigInt(b.total_program_cycles));
-      const marketCycles = Math.max(0, totalCycles - programCycles);
-      const pctOutsideMarket = totalCycles > 0 ? (marketCycles / totalCycles) * 100 : 0;
+      // total_program_cycles = market/program cycles (orders on the open market)
+      const marketCycles = Number(BigInt(b.total_program_cycles));
+      // PoVW = total - market (mining cycles)
+      const povwCycles = Math.max(0, totalCycles - marketCycles);
+      const pctMarket = totalCycles > 0 ? (marketCycles / totalCycles) * 100 : 0;
 
-      // Parse the timestamp for a clean date string
       const ts = b.timestamp_iso || new Date(b.timestamp * 1000).toISOString();
-      const date = ts.slice(0, 10); // YYYY-MM-DD
+      const date = ts.slice(0, 10);
 
       return {
         date,
         totalCycles,
-        programCycles,
+        povwCycles,
         marketCycles,
-        pctOutsideMarket: parseFloat(pctOutsideMarket.toFixed(2)),
+        pctMarket: parseFloat(pctMarket.toFixed(2)),
         ordersLocked: b.total_requests_locked,
         ordersFulfilled: b.total_fulfilled,
         fulfillmentRate: parseFloat(String(b.locked_orders_fulfillment_rate)),
       };
     })
-    // Sort ascending by date
     .sort((a, b) => a.date.localeCompare(b.date));
 }
 

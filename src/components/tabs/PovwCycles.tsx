@@ -15,88 +15,69 @@ interface Props {
 interface MarketStatsBucket {
   date: string;
   totalCycles: number;
-  programCycles: number;
+  povwCycles: number;
   marketCycles: number;
-  pctOutsideMarket: number;
+  pctMarket: number;
   ordersLocked: number;
   ordersFulfilled: number;
   fulfillmentRate: number;
 }
 
-/** Combined chart data point — epoch-level PoVW + daily market stats */
-interface ChartPoint {
-  // PoVW epoch data (from /api/epochs)
+/** Daily chart data point for the area charts */
+interface DailyPoint {
+  date: string;
+  dateShort: string;     // MM-DD
+  povwCyclesT: number;   // PoVW mining cycles in trillions
+  marketCyclesT: number; // open market cycles in trillions
+  totalCyclesT: number;  // total cycles in trillions
+  pctMarket: number;
+  fulfillmentRate: number;
+}
+
+/** Epoch chart data point */
+interface EpochPoint {
   epoch: number;
   povwCyclesB: number;   // PoVW total_work in billions
   miningRewardsK: number; // mining rewards in thousands of ZKC
   povwRate: number;       // ZKC per MHz per epoch
-  // Market stats (from /api/market-stats)
-  date: string;           // YYYY-MM-DD
-  marketCyclesB: number;  // market (non-PoVW) cycles in billions
-  totalCyclesB: number;   // total cycles in billions
-  programCyclesB: number; // PoVW cycles in billions (from market-stats)
-  pctOutsideMarket: number;
-  fulfillmentRate: number;
 }
 
-const fmtCycles = (v: number) => {
-  if (v >= 1_000_000) return `${(v / 1_000_000).toFixed(1)}T`;
-  if (v >= 1_000) return `${(v / 1_000).toFixed(1)}B`;
-  if (v >= 1) return `${v.toFixed(1)}B`;
-  return `${(v * 1000).toFixed(0)}M`;
+const fmtTrillions = (v: number) => {
+  if (v >= 1000) return `${(v / 1000).toFixed(1)}P`;
+  if (v >= 1) return `${v.toFixed(1)}T`;
+  if (v >= 0.001) return `${(v * 1000).toFixed(1)}B`;
+  return `${(v * 1e6).toFixed(0)}M`;
 };
 
 const fmtPct = (v: number) => `${v.toFixed(1)}%`;
 
-function mergeData(
-  epochs: EpochData[],
-  marketStats: MarketStatsBucket[],
-): ChartPoint[] {
-  // Build a lookup from date (YYYY-MM-DD) → market stats bucket
-  const statsByDate = new Map<string, MarketStatsBucket>();
-  for (const b of marketStats) {
-    statsByDate.set(b.date, b);
-  }
+function toDailyPoints(stats: MarketStatsBucket[]): DailyPoint[] {
+  const T = 1e12;
+  return stats.map(b => ({
+    date: b.date,
+    dateShort: b.date.slice(5),
+    povwCyclesT: parseFloat((b.povwCycles / T).toFixed(2)),
+    marketCyclesT: parseFloat((b.marketCycles / T).toFixed(2)),
+    totalCyclesT: parseFloat((b.totalCycles / T).toFixed(2)),
+    pctMarket: b.pctMarket,
+    fulfillmentRate: b.fulfillmentRate,
+  }));
+}
 
-  // For each epoch, find the market-stats bucket for that epoch's date
+function toEpochPoints(epochs: EpochData[]): EpochPoint[] {
   return [...epochs]
     .sort((a, b) => a.epoch - b.epoch)
     .map(e => {
       const totalWork = e.total_cycles;
       const miningRewards = e.mining_rewards_zkc;
       const povwRate = totalWork > 0 ? miningRewards / (totalWork / 1e6) : 0;
-      const date = new Date(e.timestamp).toISOString().slice(0, 10);
-      const stats = statsByDate.get(date);
-
       return {
         epoch: e.epoch,
         povwCyclesB: parseFloat((totalWork / 1e9).toFixed(2)),
         miningRewardsK: parseFloat((miningRewards / 1000).toFixed(2)),
         povwRate: parseFloat(povwRate.toFixed(5)),
-        date,
-        marketCyclesB: stats ? parseFloat((stats.marketCycles / 1e9).toFixed(2)) : 0,
-        totalCyclesB: stats ? parseFloat((stats.totalCycles / 1e9).toFixed(2)) : 0,
-        programCyclesB: stats ? parseFloat((stats.programCycles / 1e9).toFixed(2)) : 0,
-        pctOutsideMarket: stats?.pctOutsideMarket ?? 0,
-        fulfillmentRate: stats?.fulfillmentRate ?? 0,
       };
     });
-}
-
-/** Build daily-only data from market-stats for the area chart and daily overview */
-function dailyPoints(marketStats: MarketStatsBucket[]): ChartPoint[] {
-  return marketStats.map(b => ({
-    epoch: 0,
-    povwCyclesB: 0,
-    miningRewardsK: 0,
-    povwRate: 0,
-    date: b.date,
-    marketCyclesB: parseFloat((b.marketCycles / 1e9).toFixed(2)),
-    totalCyclesB: parseFloat((b.totalCycles / 1e9).toFixed(2)),
-    programCyclesB: parseFloat((b.programCycles / 1e9).toFixed(2)),
-    pctOutsideMarket: b.pctOutsideMarket,
-    fulfillmentRate: b.fulfillmentRate,
-  }));
 }
 
 export default function PovwCycles({ epochs, epochsLoading, epochsError }: Props) {
@@ -124,20 +105,8 @@ export default function PovwCycles({ epochs, epochsLoading, epochsError }: Props
 
   const loading = epochsLoading || statsLoading;
   const hasData = epochs.length > 0 || marketStats.length > 0;
-
-  // Per-epoch merged data (for epoch-based charts)
-  const epochData = useMemo(
-    () => mergeData(epochs, marketStats),
-    [epochs, marketStats],
-  );
-
-  // Daily-only data (for daily totals area chart)
-  const dailyData = useMemo(
-    () => dailyPoints(marketStats),
-    [marketStats],
-  );
-
-  // Latest stats for summary cards
+  const dailyData = useMemo(() => toDailyPoints(marketStats), [marketStats]);
+  const epochData = useMemo(() => toEpochPoints(epochs), [epochs]);
   const latest = marketStats.length > 0 ? marketStats[marketStats.length - 1] : null;
 
   if (loading && !hasData) {
@@ -176,25 +145,25 @@ export default function PovwCycles({ epochs, epochsLoading, epochsError }: Props
           <div className="bg-[#111827] rounded-lg p-3 border border-gray-800">
             <p className="text-gray-500 text-xs mb-1">Total Cycles (latest day)</p>
             <p className="text-cyan-300 text-lg font-semibold">
-              {fmtCycles(latest.totalCycles / 1e9)}
+              {fmtTrillions(latest.totalCycles / 1e12)}
             </p>
           </div>
           <div className="bg-[#111827] rounded-lg p-3 border border-gray-800">
             <p className="text-gray-500 text-xs mb-1">PoVW Cycles</p>
             <p className="text-cyan-400 text-lg font-semibold">
-              {fmtCycles(latest.programCycles / 1e9)}
+              {fmtTrillions(latest.povwCycles / 1e12)}
             </p>
           </div>
           <div className="bg-[#111827] rounded-lg p-3 border border-gray-800">
             <p className="text-gray-500 text-xs mb-1">Market Cycles</p>
             <p className="text-purple-400 text-lg font-semibold">
-              {fmtCycles(latest.marketCycles / 1e9)}
+              {fmtTrillions(latest.marketCycles / 1e12)}
             </p>
           </div>
           <div className="bg-[#111827] rounded-lg p-3 border border-gray-800">
-            <p className="text-gray-500 text-xs mb-1">% Outside Market</p>
+            <p className="text-gray-500 text-xs mb-1">% Market Cycles</p>
             <p className="text-amber-400 text-lg font-semibold">
-              {latest.pctOutsideMarket.toFixed(1)}%
+              {latest.pctMarket.toFixed(1)}%
             </p>
           </div>
         </div>
@@ -210,14 +179,13 @@ export default function PovwCycles({ epochs, epochsLoading, epochsError }: Props
             <AreaChart data={dailyData} margin={{ left: 5, right: 10, top: 5, bottom: 20 }}>
               <CartesianGrid strokeDasharray="3 3" stroke="#1f2937" />
               <XAxis
-                dataKey="date"
+                dataKey="dateShort"
                 tick={{ fill: '#9ca3af', fontSize: 9 }}
                 axisLine={{ stroke: '#374151' }}
                 tickLine={false}
-                tickFormatter={(v: string) => v.slice(5)} // MM-DD
               />
               <YAxis
-                tickFormatter={fmtCycles}
+                tickFormatter={fmtTrillions}
                 tick={{ fill: '#9ca3af', fontSize: 9 }}
                 axisLine={false}
                 tickLine={false}
@@ -225,13 +193,13 @@ export default function PovwCycles({ epochs, epochsLoading, epochsError }: Props
                 label={{ value: 'Cycles', angle: -90, position: 'insideLeft', offset: 30, fill: '#9ca3af', fontSize: 10 }}
               />
               <Tooltip
-                formatter={(v: unknown, name: unknown) => [fmtCycles(Number(v)), String(name)]}
+                formatter={(v: unknown, name: unknown) => [fmtTrillions(Number(v)), String(name)]}
                 {...tooltipStyle}
               />
               <Legend wrapperStyle={{ fontSize: 12, color: '#9ca3af' }} />
               <Area
                 type="monotone"
-                dataKey="programCyclesB"
+                dataKey="povwCyclesT"
                 name="PoVW Cycles"
                 stackId="1"
                 stroke="#22d3ee"
@@ -240,7 +208,7 @@ export default function PovwCycles({ epochs, epochsLoading, epochsError }: Props
               />
               <Area
                 type="monotone"
-                dataKey="marketCyclesB"
+                dataKey="marketCyclesT"
                 name="Market Cycles"
                 stackId="1"
                 stroke="#a855f7"
@@ -251,23 +219,22 @@ export default function PovwCycles({ epochs, epochsLoading, epochsError }: Props
           </ResponsiveContainer>
         </div>
 
-        {/* % Outside Market over time */}
+        {/* % Market Cycles over time */}
         <div className="bg-[#111827] rounded-lg p-3 sm:p-4 border border-gray-800">
           <h3 className="text-gray-200 text-sm font-semibold mb-3">
-            % Cycles Outside Market (Daily)
+            % Market Cycles (Daily)
           </h3>
           <ResponsiveContainer width="100%" height={280}>
             <AreaChart data={dailyData} margin={{ left: 5, right: 10, top: 5, bottom: 20 }}>
               <CartesianGrid strokeDasharray="3 3" stroke="#1f2937" />
               <XAxis
-                dataKey="date"
+                dataKey="dateShort"
                 tick={{ fill: '#9ca3af', fontSize: 9 }}
                 axisLine={{ stroke: '#374151' }}
                 tickLine={false}
-                tickFormatter={(v: string) => v.slice(5)}
               />
               <YAxis
-                domain={[0, 100]}
+                domain={[0, 'auto']}
                 tickFormatter={fmtPct}
                 tick={{ fill: '#9ca3af', fontSize: 9 }}
                 axisLine={false}
@@ -281,7 +248,7 @@ export default function PovwCycles({ epochs, epochsLoading, epochsError }: Props
               />
               <Area
                 type="monotone"
-                dataKey="pctOutsideMarket"
+                dataKey="pctMarket"
                 name="% Market"
                 stroke="#f59e0b"
                 fill="#f59e0b"
@@ -309,7 +276,7 @@ export default function PovwCycles({ epochs, epochsLoading, epochsError }: Props
                   label={{ value: 'Epoch', position: 'insideBottom', offset: -10, fill: '#9ca3af', fontSize: 10 }}
                 />
                 <YAxis
-                  tickFormatter={fmtCycles}
+                  tickFormatter={(v: number) => `${v.toFixed(0)}B`}
                   tick={{ fill: '#9ca3af', fontSize: 9 }}
                   axisLine={false}
                   tickLine={false}
@@ -317,7 +284,7 @@ export default function PovwCycles({ epochs, epochsLoading, epochsError }: Props
                   label={{ value: 'Cycles (B)', angle: -90, position: 'insideLeft', offset: 30, fill: '#9ca3af', fontSize: 10 }}
                 />
                 <Tooltip
-                  formatter={(v: unknown, name: unknown) => [fmtCycles(Number(v)), String(name)]}
+                  formatter={(v: unknown, name: unknown) => [`${Number(v).toFixed(1)}B`, String(name)]}
                   {...tooltipStyle}
                 />
                 <Bar dataKey="povwCyclesB" name="PoVW Cycles" fill="#22d3ee" radius={[2, 2, 0, 0]} />
@@ -381,7 +348,7 @@ export default function PovwCycles({ epochs, epochsLoading, epochsError }: Props
 
       {/* Data source footnote */}
       <p className="text-gray-600 text-xs mt-4">
-        Market data: Boundless Explorer · PoVW data: /api/epochs · Market stats: /api/market-stats
+        Market data: Boundless Explorer · PoVW: /api/epochs · Stats: /api/market-stats
       </p>
     </div>
   );
