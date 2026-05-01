@@ -1,7 +1,7 @@
 /**
  * GET /api/epochs
  *
- * Proxies https://explorer.boundless.network/api/mining, normalises the
+ * Proxies https://explorer.boundless.network/api/base/mining, normalises the
  * entries into the EpochData shape expected by the frontend, and caches
  * the result in KV for 2 hours.
  *
@@ -39,7 +39,7 @@ export interface EpochData {
   mining_rewards_zkc: number;
 }
 
-const UPSTREAM = 'https://explorer.boundless.network/api/mining';
+const UPSTREAM = 'https://explorer.boundless.network/api/base/mining';
 const CACHE_KEY = 'epochs';
 const CACHE_TTL_SECONDS = 7200; // 2 hours
 
