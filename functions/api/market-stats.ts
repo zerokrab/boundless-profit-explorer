@@ -47,7 +47,7 @@ export interface MarketStatsBucket {
 }
 
 const UPSTREAM = 'https://explorer.boundless.network/base/stats';
-const CACHE_KEY = 'market-stats';
+const CACHE_KEY = 'market-stats-v2';
 const CACHE_TTL_SECONDS = 7200; // 2 hours
 
 /**

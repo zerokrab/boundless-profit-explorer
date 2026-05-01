@@ -53,23 +53,29 @@ const fmtPct = (v: number) => `${v.toFixed(1)}%`;
 
 function toDailyPoints(stats: MarketStatsBucket[]): DailyPoint[] {
   const T = 1e12;
-  return stats.map(b => ({
-    date: b.date,
-    dateShort: b.date.slice(5),
-    povwCyclesT: parseFloat((b.povwCycles / T).toFixed(2)),
-    marketCyclesT: parseFloat((b.marketCycles / T).toFixed(2)),
-    totalCyclesT: parseFloat((b.totalCycles / T).toFixed(2)),
-    pctMarket: b.pctMarket,
-    fulfillmentRate: b.fulfillmentRate,
-  }));
+  return stats.map(b => {
+    const totalCycles = b.totalCycles ?? 0;
+    const marketCycles = b.marketCycles ?? 0;
+    const povwCycles = b.povwCycles ?? (totalCycles - marketCycles);
+    const pctMarket = b.pctMarket ?? (totalCycles > 0 ? (marketCycles / totalCycles) * 100 : 0);
+    return {
+      date: b.date,
+      dateShort: b.date.slice(5),
+      povwCyclesT: parseFloat((povwCycles / T).toFixed(2)),
+      marketCyclesT: parseFloat((marketCycles / T).toFixed(2)),
+      totalCyclesT: parseFloat((totalCycles / T).toFixed(2)),
+      pctMarket: parseFloat(pctMarket.toFixed(2)),
+      fulfillmentRate: b.fulfillmentRate ?? 0,
+    };
+  });
 }
 
 function toEpochPoints(epochs: EpochData[]): EpochPoint[] {
   return [...epochs]
     .sort((a, b) => a.epoch - b.epoch)
     .map(e => {
-      const totalWork = e.total_cycles;
-      const miningRewards = e.mining_rewards_zkc;
+      const totalWork = e.total_cycles ?? 0;
+      const miningRewards = e.mining_rewards_zkc ?? 0;
       const povwRate = totalWork > 0 ? miningRewards / (totalWork / 1e6) : 0;
       return {
         epoch: e.epoch,
@@ -145,25 +151,25 @@ export default function PovwCycles({ epochs, epochsLoading, epochsError }: Props
           <div className="bg-[#111827] rounded-lg p-3 border border-gray-800">
             <p className="text-gray-500 text-xs mb-1">Total Cycles (latest day)</p>
             <p className="text-cyan-300 text-lg font-semibold">
-              {fmtTrillions(latest.totalCycles / 1e12)}
+              {fmtTrillions((latest.totalCycles ?? 0) / 1e12)}
             </p>
           </div>
           <div className="bg-[#111827] rounded-lg p-3 border border-gray-800">
             <p className="text-gray-500 text-xs mb-1">PoVW Cycles</p>
             <p className="text-cyan-400 text-lg font-semibold">
-              {fmtTrillions(latest.povwCycles / 1e12)}
+              {fmtTrillions(((latest.povwCycles ?? (latest.totalCycles ?? 0) - (latest.marketCycles ?? 0)) / 1e12))}
             </p>
           </div>
           <div className="bg-[#111827] rounded-lg p-3 border border-gray-800">
             <p className="text-gray-500 text-xs mb-1">Market Cycles</p>
             <p className="text-purple-400 text-lg font-semibold">
-              {fmtTrillions(latest.marketCycles / 1e12)}
+              {fmtTrillions((latest.marketCycles ?? 0) / 1e12)}
             </p>
           </div>
           <div className="bg-[#111827] rounded-lg p-3 border border-gray-800">
             <p className="text-gray-500 text-xs mb-1">% Market Cycles</p>
             <p className="text-amber-400 text-lg font-semibold">
-              {latest.pctMarket.toFixed(1)}%
+              {(latest.pctMarket ?? (latest.totalCycles ? (latest.marketCycles ?? 0) / latest.totalCycles * 100 : 0)).toFixed(1)}%
             </p>
           </div>
         </div>
