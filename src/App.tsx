@@ -9,9 +9,16 @@ import ZkcTicker from './components/ZkcTicker';
 import ProfitExplorer from './components/tabs/ProfitExplorer';
 import Breakeven from './components/tabs/Breakeven';
 import Scenarios from './components/tabs/Scenarios';
+import PovwCycles from './components/tabs/PovwCycles';
 import { Menu } from 'lucide-react';
 
 const DEFAULT_LOOKBACK = 10;
+
+type Page = 'Calculator' | 'PoVW Cycles';
+const PAGES: Page[] = ['Calculator', 'PoVW Cycles'];
+
+const CALCULATOR_TABS = ['Profit Explorer', 'Break-even', 'Scenarios'] as const;
+type Tab = typeof CALCULATOR_TABS[number];
 
 const DEFAULT_PARAMS: ModelParams = {
   gpuConfigs: [
@@ -27,12 +34,10 @@ const DEFAULT_PARAMS: ModelParams = {
   povw_zkc_per_mhz_per_epoch: 0, // always recomputed from live epoch data
 };
 
-const TABS = ['Profit Explorer', 'Break-even', 'Scenarios'] as const;
-type Tab = typeof TABS[number];
-
 export default function App() {
   const [params, setParams] = useLocalStorage<ModelParams>('params', DEFAULT_PARAMS);
   const [lookback, setLookback] = useLocalStorage<number>('lookback', DEFAULT_LOOKBACK);
+  const [activePage, setActivePage] = useState<Page>('Calculator');
   const [activeTab, setActiveTab] = useState<Tab>('Profit Explorer');
   const [epochs, setEpochs] = useState<EpochData[]>([]);
   const [epochsLoading, setEpochsLoading] = useState(true);
@@ -98,6 +103,11 @@ export default function App() {
     setSidebarOpen(false);
   };
 
+  const handlePageChange = (page: Page) => {
+    setActivePage(page);
+    setSidebarOpen(false);
+  };
+
   return (
     <div className="flex h-screen bg-[#0a0f1e] text-gray-100 overflow-hidden">
       {/* Mobile sidebar backdrop */}
@@ -160,24 +170,43 @@ export default function App() {
             </span>
           </div>
 
-          {/* Row 2 (mobile) / Only row (desktop): tabs + desktop-only right side */}
+          {/* Row 2 (mobile) / Only row (desktop): page nav + tabs + desktop-only right side */}
           <div className="flex items-center px-3 sm:px-6 gap-0">
-            {/* Tabs */}
-            <div className="flex items-center overflow-x-auto scrollbar-hide">
-              {TABS.map(tab => (
+            {/* Page-level navigation */}
+            <div className="flex items-center overflow-x-auto scrollbar-hide mr-2">
+              {PAGES.map(page => (
                 <button
-                  key={tab}
-                  onClick={() => handleTabChange(tab)}
+                  key={page}
+                  onClick={() => handlePageChange(page)}
                   className={`px-3 sm:px-4 py-3 text-xs sm:text-sm font-medium transition-colors border-b-2 -mb-px whitespace-nowrap flex-shrink-0 ${
-                    activeTab === tab
+                    activePage === page
                       ? 'border-cyan-400 text-cyan-400'
                       : 'border-transparent text-gray-400 hover:text-gray-200'
                   }`}
                 >
-                  {tab}
+                  {page}
                 </button>
               ))}
             </div>
+
+            {/* Calculator sub-tabs (only when on Calculator page) */}
+            {activePage === 'Calculator' && (
+              <div className="flex items-center overflow-x-auto scrollbar-hide border-l border-gray-700 pl-2">
+                {CALCULATOR_TABS.map(tab => (
+                  <button
+                    key={tab}
+                    onClick={() => handleTabChange(tab)}
+                    className={`px-3 sm:px-4 py-3 text-xs sm:text-sm font-medium transition-colors border-b-2 -mb-px whitespace-nowrap flex-shrink-0 ${
+                      activeTab === tab
+                        ? 'border-cyan-400 text-cyan-400'
+                        : 'border-transparent text-gray-400 hover:text-gray-200'
+                    }`}
+                  >
+                    {tab}
+                  </button>
+                ))}
+              </div>
+            )}
 
             {/* Desktop-only right side */}
             <div className="hidden lg:flex ml-auto items-center gap-4 pr-2 flex-shrink-0">
@@ -206,9 +235,11 @@ export default function App() {
           </div>
         </div>
 
-        {/* Tab content */}
+        {/* Page content */}
         <div className="flex-1 overflow-auto pb-0">
-          {epochsLoading ? (
+          {activePage === 'PoVW Cycles' ? (
+            <PovwCycles epochs={epochs} epochsLoading={epochsLoading} epochsError={epochsError} />
+          ) : epochsLoading ? (
             <div className="flex items-center justify-center h-full">
               <div className="text-center">
                 <div className="text-4xl mb-4 animate-pulse">⬡</div>
