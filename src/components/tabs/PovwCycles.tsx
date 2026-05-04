@@ -107,6 +107,12 @@ export default function PovwCycles({ epochs, epochsLoading, epochsError }: Props
   const hasData = epochs.length > 0 || marketStats.length > 0;
   const merged = useMemo(() => mergeEpochData(epochs, marketStats), [epochs, marketStats]);
   const latest = merged.length > 0 ? merged[merged.length - 1] : null;
+  const overviewStats = useMemo(() => {
+    if (merged.length === 0) return { totalGrindingRewardsUSD: 0, avgPctMarket: 0 };
+    const totalGrindingRewardsUSD = merged.reduce((s, e) => s + e.grindingRewardsUSD, 0);
+    const avgPctMarket = merged.reduce((s, e) => s + e.pctMarket, 0) / merged.length;
+    return { totalGrindingRewardsUSD, avgPctMarket };
+  }, [merged]);
 
   if (loading && !hasData) {
     return (
@@ -138,7 +144,23 @@ export default function PovwCycles({ epochs, epochsLoading, epochsError }: Props
         </p>
       </div>
 
-      {/* Summary cards */}
+      {/* Overview stats */}
+      <div className="grid grid-cols-2 sm:grid-cols-2 gap-3 mb-4">
+        <div className="bg-[#111827] rounded-lg p-3 border border-gray-800">
+          <p className="text-gray-500 text-xs mb-1">Total Grinding Rewards</p>
+          <p className="text-amber-400 text-lg font-semibold">
+            {overviewStats.totalGrindingRewardsUSD.toLocaleString('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 })}
+          </p>
+        </div>
+        <div className="bg-[#111827] rounded-lg p-3 border border-gray-800">
+          <p className="text-gray-500 text-xs mb-1">Avg PoVW % Market Cycles</p>
+          <p className="text-amber-300 text-lg font-semibold">
+            {overviewStats.avgPctMarket.toFixed(1)}%
+          </p>
+        </div>
+      </div>
+
+      {/* Latest Epoch stats */}
       <div className="grid grid-cols-2 sm:grid-cols-5 gap-3 mb-6">
         {latest && (
           <div className="bg-[#111827] rounded-lg p-3 border border-gray-800">
