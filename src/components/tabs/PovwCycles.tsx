@@ -114,7 +114,10 @@ export default function PovwCycles({ epochs, epochsLoading, epochsError }: Props
   const hasData = epochs.length > 0 || marketStats.length > 0;
   const dailyData = useMemo(() => toDailyPoints(marketStats), [marketStats]);
   const epochData = useMemo(() => toEpochPoints(epochs), [epochs]);
-  const latestDaily = marketStats.length > 0 ? marketStats[marketStats.length - 1] : null;
+  // Use the second-to-last daily data point for summary cards since the last
+  // one is always a partial day (still accumulating). The epoch data already
+  // excludes in-progress epochs via the /api/epochs normaliser.
+  const latestCompleteDaily = marketStats.length > 1 ? marketStats[marketStats.length - 2] : marketStats.length > 0 ? marketStats[0] : null;
   const latestEpoch = epochData.length > 0 ? epochData[epochData.length - 1] : null;
 
   if (loading && !hasData) {
@@ -138,7 +141,7 @@ export default function PovwCycles({ epochs, epochsLoading, epochsError }: Props
       <div className="mb-4 sm:mb-6">
         <h2 className="text-gray-100 text-lg font-semibold mb-1">PoVW &amp; Market Cycles</h2>
         <p className="text-gray-400 text-sm">
-          Cycles on the Boundless network — PoVW mining vs open market (program) orders.
+          Cycle breakdown on the Boundless network. PoVW mining accounts for ~98% of all cycles; the remaining ~2% comes from open market (ZK proof) orders.
           {(epochsError || statsError) && (
             <span className="text-yellow-500 ml-2" title={epochsError || statsError || ''}>
               ⚠ {epochsError || statsError}
@@ -159,30 +162,30 @@ export default function PovwCycles({ epochs, epochsLoading, epochsError }: Props
         )}
         {latestEpoch && (
           <div className="bg-[#111827] rounded-lg p-3 border border-gray-800">
-            <p className="text-gray-500 text-xs mb-1">PoVW (latest epoch)</p>
+            <p className="text-gray-500 text-xs mb-1">PoVW <span className="text-gray-600">(epoch #{latestEpoch.epoch})</span></p>
             <p className="text-cyan-400 text-lg font-semibold">
               {fmtCycles(latestEpoch.povwCyclesT)}
             </p>
           </div>
         )}
-        {latestDaily && (
+        {latestCompleteDaily && (
           <>
             <div className="bg-[#111827] rounded-lg p-3 border border-gray-800">
-              <p className="text-gray-500 text-xs mb-1">Market (latest day)</p>
+              <p className="text-gray-500 text-xs mb-1">Open Orders <span className="text-gray-600">({latestCompleteDaily.date.slice(5)})</span></p>
               <p className="text-purple-400 text-lg font-semibold">
-                {fmtCycles((latestDaily.marketCycles ?? 0) / 1e12)}
+                {fmtCycles((latestCompleteDaily.marketCycles ?? 0) / 1e12)}
               </p>
             </div>
             <div className="bg-[#111827] rounded-lg p-3 border border-gray-800">
-              <p className="text-gray-500 text-xs mb-1">Total (latest day)</p>
+              <p className="text-gray-500 text-xs mb-1">Total Cycles <span className="text-gray-600">({latestCompleteDaily.date.slice(5)})</span></p>
               <p className="text-cyan-300 text-lg font-semibold">
-                {fmtCycles((latestDaily.totalCycles ?? 0) / 1e12)}
+                {fmtCycles((latestCompleteDaily.totalCycles ?? 0) / 1e12)}
               </p>
             </div>
             <div className="bg-[#111827] rounded-lg p-3 border border-gray-800">
-              <p className="text-gray-500 text-xs mb-1">% Market</p>
+              <p className="text-gray-500 text-xs mb-1">Open Orders %</p>
               <p className="text-amber-400 text-lg font-semibold">
-                {(latestDaily.pctMarket ?? (latestDaily.totalCycles ? (latestDaily.marketCycles ?? 0) / latestDaily.totalCycles * 100 : 0)).toFixed(1)}%
+                {(latestCompleteDaily.pctMarket ?? (latestCompleteDaily.totalCycles ? (latestCompleteDaily.marketCycles ?? 0) / latestCompleteDaily.totalCycles * 100 : 0)).toFixed(1)}%
               </p>
             </div>
           </>
@@ -193,7 +196,7 @@ export default function PovwCycles({ epochs, epochsLoading, epochsError }: Props
         {/* Daily Cycles — Market and PoVW as separate lines (not stacked) */}
         <div className="bg-[#111827] rounded-lg p-3 sm:p-4 border border-gray-800">
           <h3 className="text-gray-200 text-sm font-semibold mb-3">
-            Daily Cycles — Market vs PoVW
+            Daily Cycles — Open Orders vs PoVW
           </h3>
           <ResponsiveContainer width="100%" height={280}>
             <AreaChart data={dailyData} margin={{ left: 0, right: 10, top: 5, bottom: 5 }}>
@@ -219,7 +222,7 @@ export default function PovwCycles({ epochs, epochsLoading, epochsError }: Props
               <Area
                 type="monotone"
                 dataKey="marketCyclesT"
-                name="Market (Program)"
+                name="Open Orders"
                 stroke="#a855f7"
                 fill="#a855f7"
                 fillOpacity={0.35}
@@ -241,7 +244,7 @@ export default function PovwCycles({ epochs, epochsLoading, epochsError }: Props
         {/* % Market Cycles over time */}
         <div className="bg-[#111827] rounded-lg p-3 sm:p-4 border border-gray-800">
           <h3 className="text-gray-200 text-sm font-semibold mb-3">
-            % Market Cycles (Daily)
+            % Open Orders (Daily)
           </h3>
           <ResponsiveContainer width="100%" height={280}>
             <AreaChart data={dailyData} margin={{ left: 0, right: 10, top: 5, bottom: 5 }}>
@@ -267,7 +270,7 @@ export default function PovwCycles({ epochs, epochsLoading, epochsError }: Props
               <Area
                 type="monotone"
                 dataKey="pctMarket"
-                name="% Market"
+                name="% Open Orders"
                 stroke="#f59e0b"
                 fill="#f59e0b"
                 fillOpacity={0.25}
@@ -374,7 +377,7 @@ export default function PovwCycles({ epochs, epochsLoading, epochsError }: Props
 
       {/* Data source footnote */}
       <p className="text-gray-600 text-xs mt-4">
-        PoVW: /api/epochs (completed epochs only) · Market: /api/market-stats
+        Epoch data: /api/epochs (completed only) · Daily stats: /api/market-stats · 'Open Orders' = total − PoVW (~2%)
       </p>
     </div>
   );
