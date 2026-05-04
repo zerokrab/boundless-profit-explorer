@@ -29,6 +29,8 @@ interface EpochPoint {
   pctMarket: number;         // marketCycles / (marketCycles + povwCycles) * 100
   miningRewardsK: number;    // mining rewards in thousands of ZKC
   povwRate: number;           // ZKC per MHz per epoch
+  grindingRewardsZKC: number; // mining_rewards * (1 - pctMarket/100) in K ZKC
+  grindingRewardsUSD: number; // grindingRewardsZKC * zkc_price_usd
 }
 
 const fmtCycles = (v: number) => {
@@ -62,6 +64,8 @@ function mergeEpochData(
       const marketCycles = ms?.marketCycles ?? 0;
       const totalAll = povwCycles + marketCycles;
       const pctMarket = totalAll > 0 ? (marketCycles / totalAll) * 100 : 0;
+      const grindingRewardsZKC = miningRewards * (1 - pctMarket / 100);
+      const grindingRewardsUSD = grindingRewardsZKC * (e.zkc_price_usd ?? 0);
 
       return {
         epoch: e.epoch,
@@ -70,6 +74,8 @@ function mergeEpochData(
         pctMarket: parseFloat(pctMarket.toFixed(2)),
         miningRewardsK: parseFloat((miningRewards / 1000).toFixed(2)),
         povwRate: parseFloat(povwRate.toFixed(5)),
+        grindingRewardsZKC: parseFloat((grindingRewardsZKC / 1000).toFixed(2)),
+        grindingRewardsUSD: parseFloat(grindingRewardsUSD.toFixed(2)),
       };
     });
 }
