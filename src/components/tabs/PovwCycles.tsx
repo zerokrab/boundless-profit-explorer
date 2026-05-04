@@ -11,35 +11,24 @@ interface Props {
   epochsError: string | null;
 }
 
-/** Shape returned by /api/market-stats */
+/** Per-epoch market stats returned by /api/market-stats */
 interface MarketStatsBucket {
-  date: string;
-  totalCycles: number;
-  povwCycles: number;
-  marketCycles: number;
-  pctMarket: number;
+  epoch: number;
+  marketCycles: number;      // total_program_cycles summed over 2 days
+  totalCycles: number;        // total_cycles summed over 2 days
   ordersLocked: number;
   ordersFulfilled: number;
-  fulfillmentRate: number;
+  fulfillmentRate: number;   // 0-100
 }
 
-/** Daily chart data point */
-interface DailyPoint {
-  date: string;
-  dateShort: string;       // MM-DD
-  marketCyclesT: number;   // open market cycles in trillions
-  povwCyclesT: number;     // PoVW mining cycles in trillions
-  totalCyclesT: number;    // total cycles in trillions
-  pctMarket: number;
-  fulfillmentRate: number;
-}
-
-/** Epoch chart data point */
+/** Merged per-epoch data point for charts */
 interface EpochPoint {
   epoch: number;
-  povwCyclesT: number;     // PoVW total_work in trillions
-  miningRewardsK: number;  // mining rewards in thousands of ZKC
-  povwRate: number;        // ZKC per MHz per epoch
+  povwCyclesT: number;       // PoVW total_work in trillions (from /api/epochs)
+  marketCyclesT: number;     // market cycles in trillions (from /api/market-stats)
+  pctMarket: number;         // marketCycles / (marketCycles + povwCycles) * 100
+  miningRewardsK: number;    // mining rewards in thousands of ZKC
+  povwRate: number;           // ZKC per MHz per epoch
 }
 
 const fmtCycles = (v: number) => {
@@ -52,35 +41,33 @@ const fmtCycles = (v: number) => {
 
 const fmtPct = (v: number) => `${v.toFixed(1)}%`;
 
-function toDailyPoints(stats: MarketStatsBucket[]): DailyPoint[] {
-  const T = 1e12;
-  return stats.map(b => {
-    const totalCycles = b.totalCycles ?? 0;
-    const marketCycles = b.marketCycles ?? 0;
-    const povwCycles = b.povwCycles ?? (totalCycles - marketCycles);
-    const pctMarket = b.pctMarket ?? (totalCycles > 0 ? (marketCycles / totalCycles) * 100 : 0);
-    return {
-      date: b.date,
-      dateShort: b.date.slice(5),
-      marketCyclesT: parseFloat((marketCycles / T).toFixed(2)),
-      povwCyclesT: parseFloat((povwCycles / T).toFixed(3)),
-      totalCyclesT: parseFloat((totalCycles / T).toFixed(2)),
-      pctMarket: parseFloat(pctMarket.toFixed(2)),
-      fulfillmentRate: b.fulfillmentRate ?? 0,
-    };
-  });
-}
+const T = 1e12;
 
-function toEpochPoints(epochs: EpochData[]): EpochPoint[] {
+function mergeEpochData(
+  epochs: EpochData[],
+  marketStats: MarketStatsBucket[],
+): EpochPoint[] {
+  const marketByEpoch = new Map<number, MarketStatsBucket>();
+  for (const ms of marketStats) {
+    marketByEpoch.set(ms.epoch, ms);
+  }
+
   return [...epochs]
     .sort((a, b) => a.epoch - b.epoch)
     .map(e => {
-      const totalWork = e.total_cycles ?? 0;
+      const povwCycles = e.total_cycles ?? 0;
       const miningRewards = e.mining_rewards_zkc ?? 0;
-      const povwRate = totalWork > 0 ? miningRewards / (totalWork / 1e6) : 0;
+      const povwRate = povwCycles > 0 ? miningRewards / (povwCycles / 1e6) : 0;
+      const ms = marketByEpoch.get(e.epoch);
+      const marketCycles = ms?.marketCycles ?? 0;
+      const totalAll = povwCycles + marketCycles;
+      const pctMarket = totalAll > 0 ? (marketCycles / totalAll) * 100 : 0;
+
       return {
         epoch: e.epoch,
-        povwCyclesT: parseFloat((totalWork / 1e12).toFixed(2)),
+        povwCyclesT: parseFloat((povwCycles / T).toFixed(2)),
+        marketCyclesT: parseFloat((marketCycles / T).toFixed(2)),
+        pctMarket: parseFloat(pctMarket.toFixed(2)),
         miningRewardsK: parseFloat((miningRewards / 1000).toFixed(2)),
         povwRate: parseFloat(povwRate.toFixed(5)),
       };
@@ -112,13 +99,8 @@ export default function PovwCycles({ epochs, epochsLoading, epochsError }: Props
 
   const loading = epochsLoading || statsLoading;
   const hasData = epochs.length > 0 || marketStats.length > 0;
-  const dailyData = useMemo(() => toDailyPoints(marketStats), [marketStats]);
-  const epochData = useMemo(() => toEpochPoints(epochs), [epochs]);
-  // Use the second-to-last daily data point for summary cards since the last
-  // one is always a partial day (still accumulating). The epoch data already
-  // excludes in-progress epochs via the /api/epochs normaliser.
-  const latestCompleteDaily = marketStats.length > 1 ? marketStats[marketStats.length - 2] : marketStats.length > 0 ? marketStats[0] : null;
-  const latestEpoch = epochData.length > 0 ? epochData[epochData.length - 1] : null;
+  const merged = useMemo(() => mergeEpochData(epochs, marketStats), [epochs, marketStats]);
+  const latest = merged.length > 0 ? merged[merged.length - 1] : null;
 
   if (loading && !hasData) {
     return (
@@ -141,7 +123,7 @@ export default function PovwCycles({ epochs, epochsLoading, epochsError }: Props
       <div className="mb-4 sm:mb-6">
         <h2 className="text-gray-100 text-lg font-semibold mb-1">PoVW &amp; Market Cycles</h2>
         <p className="text-gray-400 text-sm">
-          Cycle breakdown on the Boundless network. PoVW mining accounts for ~98% of all cycles; the remaining ~2% comes from open market (ZK proof) orders.
+          Cycle breakdown per epoch. PoVW mining cycles (from total_work) vs market cycles (from total_program_cycles).
           {(epochsError || statsError) && (
             <span className="text-yellow-500 ml-2" title={epochsError || statsError || ''}>
               ⚠ {epochsError || statsError}
@@ -152,40 +134,40 @@ export default function PovwCycles({ epochs, epochsLoading, epochsError }: Props
 
       {/* Summary cards */}
       <div className="grid grid-cols-2 sm:grid-cols-5 gap-3 mb-6">
-        {latestEpoch && (
+        {latest && (
           <div className="bg-[#111827] rounded-lg p-3 border border-gray-800">
-            <p className="text-gray-500 text-xs mb-1">Latest Epoch</p>
+            <p className="text-gray-500 text-xs mb-1">Epoch</p>
             <p className="text-green-400 text-lg font-semibold">
-              #{latestEpoch.epoch}
+              #{latest.epoch}
             </p>
           </div>
         )}
-        {latestEpoch && (
+        {latest && (
           <div className="bg-[#111827] rounded-lg p-3 border border-gray-800">
-            <p className="text-gray-500 text-xs mb-1">PoVW <span className="text-gray-600">(epoch #{latestEpoch.epoch})</span></p>
+            <p className="text-gray-500 text-xs mb-1">PoVW Cycles</p>
             <p className="text-cyan-400 text-lg font-semibold">
-              {fmtCycles(latestEpoch.povwCyclesT)}
+              {fmtCycles(latest.povwCyclesT)}
             </p>
           </div>
         )}
-        {latestCompleteDaily && (
+        {latest && (
           <>
             <div className="bg-[#111827] rounded-lg p-3 border border-gray-800">
-              <p className="text-gray-500 text-xs mb-1">Open Orders <span className="text-gray-600">({latestCompleteDaily.date.slice(5)})</span></p>
+              <p className="text-gray-500 text-xs mb-1">Market Cycles</p>
               <p className="text-purple-400 text-lg font-semibold">
-                {fmtCycles((latestCompleteDaily.marketCycles ?? 0) / 1e12)}
+                {fmtCycles(latest.marketCyclesT)}
               </p>
             </div>
             <div className="bg-[#111827] rounded-lg p-3 border border-gray-800">
-              <p className="text-gray-500 text-xs mb-1">Total Cycles <span className="text-gray-600">({latestCompleteDaily.date.slice(5)})</span></p>
+              <p className="text-gray-500 text-xs mb-1">Total</p>
               <p className="text-cyan-300 text-lg font-semibold">
-                {fmtCycles((latestCompleteDaily.totalCycles ?? 0) / 1e12)}
+                {fmtCycles(latest.povwCyclesT + latest.marketCyclesT)}
               </p>
             </div>
             <div className="bg-[#111827] rounded-lg p-3 border border-gray-800">
-              <p className="text-gray-500 text-xs mb-1">Open Orders %</p>
+              <p className="text-gray-500 text-xs mb-1">% Market</p>
               <p className="text-amber-400 text-lg font-semibold">
-                {(latestCompleteDaily.pctMarket ?? (latestCompleteDaily.totalCycles ? (latestCompleteDaily.marketCycles ?? 0) / latestCompleteDaily.totalCycles * 100 : 0)).toFixed(1)}%
+                {latest.pctMarket.toFixed(1)}%
               </p>
             </div>
           </>
@@ -193,16 +175,16 @@ export default function PovwCycles({ epochs, epochsLoading, epochsError }: Props
       </div>
 
       <div className="grid grid-cols-1 xl:grid-cols-2 gap-4 sm:gap-6">
-        {/* Daily Cycles — Market and PoVW as separate lines (not stacked) */}
+        {/* PoVW vs Market Cycles per epoch */}
         <div className="bg-[#111827] rounded-lg p-3 sm:p-4 border border-gray-800">
           <h3 className="text-gray-200 text-sm font-semibold mb-3">
-            Daily Cycles — Open Orders vs PoVW
+            Cycles per Epoch — Market vs PoVW
           </h3>
           <ResponsiveContainer width="100%" height={280}>
-            <AreaChart data={dailyData} margin={{ left: 0, right: 10, top: 5, bottom: 5 }}>
+            <AreaChart data={merged} margin={{ left: 0, right: 10, top: 5, bottom: 5 }}>
               <CartesianGrid strokeDasharray="3 3" stroke="#1f2937" />
               <XAxis
-                dataKey="dateShort"
+                dataKey="epoch"
                 tick={{ fill: '#9ca3af', fontSize: 9 }}
                 axisLine={{ stroke: '#374151' }}
                 tickLine={false}
@@ -212,7 +194,7 @@ export default function PovwCycles({ epochs, epochsLoading, epochsError }: Props
                 tick={{ fill: '#9ca3af', fontSize: 9 }}
                 axisLine={false}
                 tickLine={false}
-                width={50}
+                width={55}
               />
               <Tooltip
                 formatter={(v: unknown, name: unknown) => [fmtCycles(Number(v)), String(name)]}
@@ -222,7 +204,7 @@ export default function PovwCycles({ epochs, epochsLoading, epochsError }: Props
               <Area
                 type="monotone"
                 dataKey="marketCyclesT"
-                name="Open Orders"
+                name="Market Cycles"
                 stroke="#a855f7"
                 fill="#a855f7"
                 fillOpacity={0.35}
@@ -244,13 +226,13 @@ export default function PovwCycles({ epochs, epochsLoading, epochsError }: Props
         {/* % Market Cycles over time */}
         <div className="bg-[#111827] rounded-lg p-3 sm:p-4 border border-gray-800">
           <h3 className="text-gray-200 text-sm font-semibold mb-3">
-            % Open Orders (Daily)
+            % Market Cycles per Epoch
           </h3>
           <ResponsiveContainer width="100%" height={280}>
-            <AreaChart data={dailyData} margin={{ left: 0, right: 10, top: 5, bottom: 5 }}>
+            <AreaChart data={merged} margin={{ left: 0, right: 10, top: 5, bottom: 5 }}>
               <CartesianGrid strokeDasharray="3 3" stroke="#1f2937" />
               <XAxis
-                dataKey="dateShort"
+                dataKey="epoch"
                 tick={{ fill: '#9ca3af', fontSize: 9 }}
                 axisLine={{ stroke: '#374151' }}
                 tickLine={false}
@@ -270,7 +252,7 @@ export default function PovwCycles({ epochs, epochsLoading, epochsError }: Props
               <Area
                 type="monotone"
                 dataKey="pctMarket"
-                name="% Open Orders"
+                name="% Market"
                 stroke="#f59e0b"
                 fill="#f59e0b"
                 fillOpacity={0.25}
@@ -281,13 +263,13 @@ export default function PovwCycles({ epochs, epochsLoading, epochsError }: Props
         </div>
 
         {/* Epoch-level PoVW Cycles bar chart */}
-        {epochData.length > 0 && (
+        {merged.length > 0 && (
           <div className="bg-[#111827] rounded-lg p-3 sm:p-4 border border-gray-800">
             <h3 className="text-gray-200 text-sm font-semibold mb-3">
               PoVW Cycles per Epoch
             </h3>
             <ResponsiveContainer width="100%" height={260}>
-              <BarChart data={epochData} margin={{ left: 0, right: 10, top: 5, bottom: 5 }}>
+              <BarChart data={merged} margin={{ left: 0, right: 10, top: 5, bottom: 5 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#1f2937" />
                 <XAxis
                   dataKey="epoch"
@@ -300,7 +282,7 @@ export default function PovwCycles({ epochs, epochsLoading, epochsError }: Props
                   tick={{ fill: '#9ca3af', fontSize: 9 }}
                   axisLine={false}
                   tickLine={false}
-                  width={50}
+                  width={55}
                 />
                 <Tooltip
                   formatter={(v: unknown, name: unknown) => [fmtCycles(Number(v)), String(name)]}
@@ -313,13 +295,13 @@ export default function PovwCycles({ epochs, epochsLoading, epochsError }: Props
         )}
 
         {/* PoVW Reward Rate line chart */}
-        {epochData.length > 0 && (
+        {merged.length > 0 && (
           <div className="bg-[#111827] rounded-lg p-3 sm:p-4 border border-gray-800">
             <h3 className="text-gray-200 text-sm font-semibold mb-3">
               PoVW Reward Rate (ZKC/MHz/epoch)
             </h3>
             <ResponsiveContainer width="100%" height={260}>
-              <LineChart data={epochData} margin={{ left: 0, right: 10, top: 5, bottom: 5 }}>
+              <LineChart data={merged} margin={{ left: 0, right: 10, top: 5, bottom: 5 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#1f2937" />
                 <XAxis
                   dataKey="epoch"
@@ -377,7 +359,7 @@ export default function PovwCycles({ epochs, epochsLoading, epochsError }: Props
 
       {/* Data source footnote */}
       <p className="text-gray-600 text-xs mt-4">
-        Epoch data: /api/epochs (completed only) · Daily stats: /api/market-stats · 'Open Orders' = total − PoVW (~2%)
+        PoVW: /api/epochs (total_work) · Market: /api/market-stats (total_program_cycles, grouped by epoch)
       </p>
     </div>
   );

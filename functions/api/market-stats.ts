@@ -2,16 +2,16 @@
  * GET /api/market-stats
  *
  * Fetches daily market statistics from the Boundless Explorer's RSC endpoint,
- * extracts the time-series JSON, and returns a clean array of daily buckets.
+ * groups them by epoch (2 days ≈ 1 epoch), and returns per-epoch market data.
  *
- * Key terminology:
- *   total_cycles          = all computation cycles across the network
- *   total_program_cycles  = PoVW cycles (proof-of-verifiable-work mining) — dominant share
- *   marketCycles          = total_cycles - total_program_cycles (open market orders)
+ * Key terminology (CORRECTED):
+ *   total_program_cycles  = Market cycles (ZK proof execution orders on the market)
+ *   total_cycles          = Market cycles + other overhead (~2% diff)
+ *   PoVW cycles           = NOT in this endpoint — comes from total_work in /api/base/mining
  *
  * Data source: https://explorer.boundless.network/base/stats (RSC flight data)
  *
- * KV binding: EPOCHS_CACHE (key: "market-stats")
+ * KV binding: EPOCHS_CACHE (key: "market-stats-v4")
  */
 
 interface Env {
@@ -34,29 +34,27 @@ interface StatsBucket {
   epoch_number_start: number | null;
 }
 
-/** Cleaned bucket returned to the frontend. */
+/** Per-epoch market stats returned to the frontend. */
 export interface MarketStatsBucket {
-  date: string;                // YYYY-MM-DD
-  totalCycles: number;         // all computation cycles
-  povwCycles: number;          // PoVW mining cycles (= total_program_cycles, dominant share)
-  marketCycles: number;       // open market order cycles (= totalCycles - povwCycles, small share)
-  pctMarket: number;           // marketCycles / totalCycles * 100
+  epoch: number;
+  marketCycles: number;       // total_program_cycles summed over 2 days (= market ZK proof orders)
+  totalCycles: number;         // total_cycles summed over 2 days (= market + small overhead diff)
   ordersLocked: number;
   ordersFulfilled: number;
   fulfillmentRate: number;    // 0-100
 }
 
 const UPSTREAM = 'https://explorer.boundless.network/base/stats';
-const CACHE_KEY = 'market-stats-v3';
+const CACHE_KEY = 'market-stats-v4';
 const CACHE_TTL_SECONDS = 7200; // 2 hours
 
 /**
  * Extract the JSON array from the RSC flight-data payload.
  * The payload is a mix of React flight instructions and embedded JSON.
- * We grep for the array that starts with {"chain_id":8453 and parse it.
+ * We grep for the array that starts with {\"chain_id\":8453 and parse it.
  */
 function extractStatsArray(rscText: string): StatsBucket[] {
-  const startMarker = '[{"chain_id":';
+  const startMarker = '[{\"chain_id\":';
   const startIdx = rscText.indexOf(startMarker);
   if (startIdx === -1) {
     throw new Error('Could not find stats JSON array in RSC payload');
@@ -79,39 +77,75 @@ function extractStatsArray(rscText: string): StatsBucket[] {
   }
 
   const jsonStr = rscText.slice(startIdx, endIdx);
-  // Handle RSC date references like "$D2025-12-01T00:00:00.000Z"
+  // Handle RSC date references like \"$D2025-12-01T00:00:00.000Z\"
   // by stripping the $D prefix — these appear inside timestamp_iso fields
-  const cleaned = jsonStr.replace(/"\$D([^"]+)"/g, '"$1"');
+  const cleaned = jsonStr.replace(/"\\$D([^"]+)"/g, '"$1"');
 
   return JSON.parse(cleaned) as StatsBucket[];
 }
 
-function normaliseBuckets(buckets: StatsBucket[]): MarketStatsBucket[] {
-  return buckets
-    .filter(b => Number(b.total_cycles) > 0) // skip empty buckets
-    .map(b => {
-      const totalCycles = Number(BigInt(b.total_cycles));
-  // total_program_cycles = PoVW (proof program) cycles — the dominant share
-  const povwCycles = Number(BigInt(b.total_program_cycles));
-  // Market cycles = total - PoVW (open market orders fulfilled alongside mining)
-  const marketCycles = Math.max(0, totalCycles - povwCycles);
-  const pctMarket = totalCycles > 0 ? (marketCycles / totalCycles) * 100 : 0;
+/**
+ * Group daily buckets by epoch_number_start, sum cycle counts,
+ * and exclude the latest epoch (which may be in-progress).
+ */
+function groupByEpoch(buckets: StatsBucket[]): MarketStatsBucket[] {
+  // Filter out empty buckets and those without an epoch number
+  const valid = buckets.filter(
+    b => Number(b.total_cycles) > 0 && b.epoch_number_start !== null
+  );
 
-      const ts = b.timestamp_iso || new Date(b.timestamp * 1000).toISOString();
-      const date = ts.slice(0, 10);
+  // Group by epoch
+  const grouped = new Map<number, {
+    marketCycles: number;
+    totalCycles: number;
+    ordersLocked: number;
+    ordersFulfilled: number;
+    fulfillmentRateSum: number;
+    fulfillmentCount: number;
+  }>();
 
-      return {
-        date,
-        totalCycles,
-        povwCycles,
+  for (const b of valid) {
+    const epoch = b.epoch_number_start!;
+    const existing = grouped.get(epoch);
+    const marketCycles = Number(BigInt(b.total_program_cycles));
+    const totalCycles = Number(BigInt(b.total_cycles));
+
+    if (existing) {
+      existing.marketCycles += marketCycles;
+      existing.totalCycles += totalCycles;
+      existing.ordersLocked += b.total_requests_locked;
+      existing.ordersFulfilled += b.total_fulfilled;
+      existing.fulfillmentRateSum += b.locked_orders_fulfillment_rate;
+      existing.fulfillmentCount += 1;
+    } else {
+      grouped.set(epoch, {
         marketCycles,
-        pctMarket: parseFloat(pctMarket.toFixed(2)),
+        totalCycles,
         ordersLocked: b.total_requests_locked,
         ordersFulfilled: b.total_fulfilled,
-        fulfillmentRate: parseFloat(String(b.locked_orders_fulfillment_rate)),
-      };
-    })
-    .sort((a, b) => a.date.localeCompare(b.date));
+        fulfillmentRateSum: b.locked_orders_fulfillment_rate,
+        fulfillmentCount: 1,
+      });
+    }
+  }
+
+  // Sort by epoch ascending and exclude the latest (in-progress) epoch
+  const epochs = [...grouped.entries()]
+    .sort((a, b) => a[0] - b[0]);
+
+  // The last epoch may still be in-progress — exclude it
+  const completed = epochs.slice(0, -1);
+
+  return completed.map(([epoch, data]) => ({
+    epoch,
+    marketCycles: data.marketCycles,
+    totalCycles: data.totalCycles,
+    ordersLocked: data.ordersLocked,
+    ordersFulfilled: data.ordersFulfilled,
+    fulfillmentRate: parseFloat(
+      (data.fulfillmentRateSum / data.fulfillmentCount).toFixed(1)
+    ),
+  }));
 }
 
 export const onRequestGet: PagesFunction<Env> = async ({ env }) => {
@@ -140,7 +174,7 @@ export const onRequestGet: PagesFunction<Env> = async ({ env }) => {
     }
     const rscText = await upstream.text();
     const raw = extractStatsArray(rscText);
-    const normalised = normaliseBuckets(raw);
+    const normalised = groupByEpoch(raw);
     const body = JSON.stringify(normalised);
 
     // 3. Store in KV with TTL
