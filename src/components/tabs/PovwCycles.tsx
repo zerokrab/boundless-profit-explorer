@@ -99,7 +99,8 @@ export default function PovwCycles({ epochs, epochsLoading, epochsError }: Props
 
   const loading = epochsLoading || statsLoading;
   const hasData = epochs.length > 0 || marketStats.length > 0;
-  const merged = useMemo(() => mergeEpochData(epochs, marketStats), [epochs, marketStats]);
+  const mergedAll = useMemo(() => mergeEpochData(epochs, marketStats), [epochs, marketStats]);
+  const merged = mergedAll.length > 100 ? mergedAll.slice(-100) : mergedAll;
   const latest = merged.length > 0 ? merged[merged.length - 1] : null;
 
   if (loading && !hasData) {
