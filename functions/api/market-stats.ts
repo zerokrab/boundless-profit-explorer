@@ -5,9 +5,9 @@
  * extracts the time-series JSON, and returns a clean array of daily buckets.
  *
  * Key terminology:
- *   total_cycles        = all computation cycles across the network
- *   total_program_cycles = cycles from orders on the open market (ZK proof requests)
- *   povwCycles          = total_cycles - total_program_cycles (Proof-of-Verifiable-Work mining)
+ *   total_cycles          = all computation cycles across the network
+ *   total_program_cycles  = PoVW cycles (proof-of-verifiable-work mining) — dominant share
+ *   marketCycles          = total_cycles - total_program_cycles (open market orders)
  *
  * Data source: https://explorer.boundless.network/base/stats (RSC flight data)
  *
@@ -38,8 +38,8 @@ interface StatsBucket {
 export interface MarketStatsBucket {
   date: string;                // YYYY-MM-DD
   totalCycles: number;         // all computation cycles
-  povwCycles: number;          // PoVW mining cycles  (= totalCycles - marketCycles)
-  marketCycles: number;       // open-market program cycles (= total_program_cycles)
+  povwCycles: number;          // PoVW mining cycles (= total_program_cycles, dominant share)
+  marketCycles: number;       // open market order cycles (= totalCycles - povwCycles, small share)
   pctMarket: number;           // marketCycles / totalCycles * 100
   ordersLocked: number;
   ordersFulfilled: number;
@@ -47,7 +47,7 @@ export interface MarketStatsBucket {
 }
 
 const UPSTREAM = 'https://explorer.boundless.network/base/stats';
-const CACHE_KEY = 'market-stats-v2';
+const CACHE_KEY = 'market-stats-v3';
 const CACHE_TTL_SECONDS = 7200; // 2 hours
 
 /**
@@ -91,11 +91,11 @@ function normaliseBuckets(buckets: StatsBucket[]): MarketStatsBucket[] {
     .filter(b => Number(b.total_cycles) > 0) // skip empty buckets
     .map(b => {
       const totalCycles = Number(BigInt(b.total_cycles));
-      // total_program_cycles = market/program cycles (orders on the open market)
-      const marketCycles = Number(BigInt(b.total_program_cycles));
-      // PoVW = total - market (mining cycles)
-      const povwCycles = Math.max(0, totalCycles - marketCycles);
-      const pctMarket = totalCycles > 0 ? (marketCycles / totalCycles) * 100 : 0;
+  // total_program_cycles = PoVW (proof program) cycles — the dominant share
+  const povwCycles = Number(BigInt(b.total_program_cycles));
+  // Market cycles = total - PoVW (open market orders fulfilled alongside mining)
+  const marketCycles = Math.max(0, totalCycles - povwCycles);
+  const pctMarket = totalCycles > 0 ? (marketCycles / totalCycles) * 100 : 0;
 
       const ts = b.timestamp_iso || new Date(b.timestamp * 1000).toISOString();
       const date = ts.slice(0, 10);
