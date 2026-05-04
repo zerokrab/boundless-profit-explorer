@@ -123,7 +123,7 @@ export default function PovwCycles({ epochs, epochsLoading, epochsError }: Props
       <div className="mb-4 sm:mb-6">
         <h2 className="text-gray-100 text-lg font-semibold mb-1">PoVW &amp; Market Cycles</h2>
         <p className="text-gray-400 text-sm">
-          Cycle breakdown per epoch. PoVW mining cycles (from total_work) vs market cycles (from total_program_cycles).
+          Compares cycles performed on the market versus cycles submitted for PoVW mining.
           {(epochsError || statsError) && (
             <span className="text-yellow-500 ml-2" title={epochsError || statsError || ''}>
               ⚠ {epochsError || statsError}
@@ -136,7 +136,7 @@ export default function PovwCycles({ epochs, epochsLoading, epochsError }: Props
       <div className="grid grid-cols-2 sm:grid-cols-5 gap-3 mb-6">
         {latest && (
           <div className="bg-[#111827] rounded-lg p-3 border border-gray-800">
-            <p className="text-gray-500 text-xs mb-1">Epoch</p>
+            <p className="text-gray-500 text-xs mb-1">Latest Epoch</p>
             <p className="text-green-400 text-lg font-semibold">
               #{latest.epoch}
             </p>
@@ -213,7 +213,7 @@ export default function PovwCycles({ epochs, epochsLoading, epochsError }: Props
               <Area
                 type="monotone"
                 dataKey="povwCyclesT"
-                name="PoVW Mining"
+                name="PoVW Cycles"
                 stroke="#22d3ee"
                 fill="#22d3ee"
                 fillOpacity={0.35}
@@ -357,10 +357,6 @@ export default function PovwCycles({ epochs, epochsLoading, epochsError }: Props
         )}
       </div>
 
-      {/* Data source footnote */}
-      <p className="text-gray-600 text-xs mt-4">
-        PoVW: /api/epochs (total_work) · Market: /api/market-stats (total_program_cycles, grouped by epoch)
-      </p>
     </div>
   );
 }
