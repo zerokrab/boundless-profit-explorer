@@ -34,9 +34,8 @@ export default function Sidebar({ params, onParamsChange, epochs, lookback, onLo
     <div className="w-80 min-w-[320px] bg-[#111827] border-r border-gray-800 h-screen overflow-y-auto shrink-0">
       <div className="p-4">
         <div className="flex items-center gap-2 mb-6">
-          <div className="w-2 h-2 rounded-full bg-cyan-400 shrink-0"></div>
-          <h1 className="text-cyan-400 font-semibold text-sm tracking-wider uppercase flex-1">
-            Boundless Profit Explorer
+          <h1 className="text-gray-300 font-semibold text-xs uppercase tracking-wider flex-1">
+            Settings
           </h1>
           {/* Close button — visible on mobile only */}
           {onClose && (
@@ -82,7 +81,7 @@ export default function Sidebar({ params, onParamsChange, epochs, lookback, onLo
                 className={inputCls}
                 type="number"
                 min={0}
-                step={0.01}
+                step={0.001}
                 value={params.zkc_price_max}
                 onChange={e => set('zkc_price_max', Number(e.target.value))}
               />
@@ -92,9 +91,8 @@ export default function Sidebar({ params, onParamsChange, epochs, lookback, onLo
               <input
                 className={inputCls}
                 type="number"
-                min={5}
+                min={1}
                 max={100}
-                step={1}
                 value={params.zkc_price_steps}
                 onChange={e => set('zkc_price_steps', Number(e.target.value))}
               />
@@ -104,12 +102,17 @@ export default function Sidebar({ params, onParamsChange, epochs, lookback, onLo
 
         <div className="border-t border-gray-800 my-4"></div>
 
-        {/* Market Reward */}
+        {/* Market Orders */}
         <div className={sectionCls}>
-          <h2 className="text-gray-300 text-xs font-semibold uppercase tracking-wider mb-2">Market Parameters</h2>
-          <div className="mb-3">
+          <h2 className="text-gray-300 text-xs font-semibold uppercase tracking-wider mb-2">
+            Market Orders
+            <TooltipIcon text="Parameters for open-market ZK proof requests fulfilled alongside PoVW mining" />
+          </h2>
+
+          <div className="mb-2">
             <label className={labelCls}>
-              <span>Market Reward<TooltipIcon text="Average market payout in USD per billion cycles." /></span> : <span className="text-cyan-400 font-mono">${params.market_reward_usd_per_bcycle.toFixed(2)}/Bcycle</span>
+              Reward ($/B cycle)
+              <TooltipIcon text="USD reward per billion cycles for fulfilled market orders" />
             </label>
             <input
               className={inputCls}
@@ -120,25 +123,58 @@ export default function Sidebar({ params, onParamsChange, epochs, lookback, onLo
               onChange={e => set('market_reward_usd_per_bcycle', Number(e.target.value))}
             />
           </div>
-          <div className="mb-3">
+          <div>
             <label className={labelCls}>
-              <span>Market Utilization<TooltipIcon text={<>Percent of total cycles performed on the market. To calculate this for a particular prover, see <a href="https://github.com/zerokrab/boundless-market-util" target="_blank" rel="noopener noreferrer" className="text-cyan-400 underline hover:text-cyan-300">boundless-market-util</a>.</>} /></span> : <span className="text-cyan-400 font-mono">{Math.round(params.market_order_util * 100)}%</span>
+              Utilization %
+              <TooltipIcon text="Percent of your proving capacity used for market orders" />
             </label>
             <input
-              type="range"
+              className={inputCls}
+              type="number"
               min={0}
               max={100}
               step={5}
-              value={params.market_order_util * 100}
+              value={Math.round(params.market_order_util * 100)}
               onChange={e => set('market_order_util', Number(e.target.value) / 100)}
-              className="w-full accent-cyan-500"
             />
-            <div className="flex justify-between text-gray-600 text-xs mt-0.5">
-              <span>0%</span><span>100%</span>
-            </div>
+          </div>
+        </div>
+
+        <div className="border-t border-gray-800 my-4"></div>
+
+        {/* PoVW */}
+        <div className={sectionCls}>
+          <h2 className="text-gray-300 text-xs font-semibold uppercase tracking-wider mb-2">
+            PoVW Mining
+            <TooltipIcon text="Proof-of-Verifiable-Work: mining rewards are computed automatically from live epoch data" />
+          </h2>
+
+          <div className="mb-2">
+            <label className={labelCls}>Lookback (epochs)</label>
+            <input
+              className={inputCls}
+              type="number"
+              min={1}
+              max={100}
+              value={lookback}
+              onChange={e => handleLookbackChange(Number(e.target.value))}
+            />
           </div>
           <div>
-            <label className={labelCls}>Fixed Cost Monthly ($)</label>
+            <label className={labelCls}>PoVW rate (auto)</label>
+            <div className="w-full bg-[#0a0f1e] border border-gray-700 rounded px-2 py-1 text-cyan-400 font-mono text-sm">
+              {computedPovw.toFixed(5)} ZKC/MHz/epoch
+            </div>
+          </div>
+        </div>
+
+        <div className="border-t border-gray-800 my-4"></div>
+
+        {/* Fixed Costs */}
+        <div className={sectionCls}>
+          <h2 className="text-gray-300 text-xs font-semibold uppercase tracking-wider mb-2">Fixed Costs</h2>
+          <div>
+            <label className={labelCls}>Monthly (USD)</label>
             <input
               className={inputCls}
               type="number"
@@ -146,33 +182,6 @@ export default function Sidebar({ params, onParamsChange, epochs, lookback, onLo
               step={10}
               value={params.fixed_cost_monthly_usd}
               onChange={e => set('fixed_cost_monthly_usd', Number(e.target.value))}
-            />
-          </div>
-        </div>
-
-        <div className="border-t border-gray-800 my-4"></div>
-
-        {/* POVW Rate */}
-        <div className={sectionCls}>
-          <h2 className="text-gray-300 text-xs font-semibold uppercase tracking-wider mb-2">POVW Rate</h2>
-          <div className="bg-[#0a0f1e] rounded p-2 mb-2">
-            <div className="text-gray-400 text-xs mb-1">Computed from last {lookback} epochs:</div>
-            <div className="text-cyan-400 font-mono text-sm font-semibold">
-              {computedPovw.toFixed(5)} ZKC/MHz/epoch
-            </div>
-          </div>
-          <div>
-            <label className={labelCls}>
-              Lookback Epochs <TooltipIcon text="Number of most recent epochs used to compute the POVW reward rate." />
-            </label>
-            <input
-              className={inputCls}
-              type="number"
-              min={1}
-              max={50}
-              step={1}
-              value={lookback}
-              onChange={e => handleLookbackChange(Number(e.target.value))}
             />
           </div>
         </div>
