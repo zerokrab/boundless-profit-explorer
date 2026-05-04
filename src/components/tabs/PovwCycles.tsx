@@ -29,6 +29,8 @@ interface EpochPoint {
   pctMarket: number;         // marketCycles / (marketCycles + povwCycles) * 100
   miningRewardsK: number;    // mining rewards in thousands of ZKC
   povwRate: number;           // ZKC per MHz per epoch
+  grindingRewardsZKC: number; // mining_rewards * (1 - pctMarket/100) in K ZKC
+  grindingRewardsUSD: number; // grindingRewardsZKC * zkc_price_usd
 }
 
 const fmtCycles = (v: number) => {
@@ -62,6 +64,8 @@ function mergeEpochData(
       const marketCycles = ms?.marketCycles ?? 0;
       const totalAll = povwCycles + marketCycles;
       const pctMarket = totalAll > 0 ? (marketCycles / totalAll) * 100 : 0;
+      const grindingRewardsZKC = miningRewards * (1 - pctMarket / 100);
+      const grindingRewardsUSD = grindingRewardsZKC * (e.zkc_price_usd ?? 0);
 
       return {
         epoch: e.epoch,
@@ -70,6 +74,8 @@ function mergeEpochData(
         pctMarket: parseFloat(pctMarket.toFixed(2)),
         miningRewardsK: parseFloat((miningRewards / 1000).toFixed(2)),
         povwRate: parseFloat(povwRate.toFixed(5)),
+        grindingRewardsZKC: parseFloat((grindingRewardsZKC / 1000).toFixed(2)),
+        grindingRewardsUSD: parseFloat(grindingRewardsUSD.toFixed(2)),
       };
     });
 }
@@ -156,45 +162,48 @@ export default function PovwCycles({ epochs, epochsLoading, epochsError }: Props
       </div>
 
       {/* Latest Epoch stats */}
-      <div className="grid grid-cols-2 sm:grid-cols-5 gap-3 mb-6">
-        {latest && (
-          <div className="bg-[#111827] rounded-lg p-3 border border-gray-800">
-            <p className="text-gray-500 text-xs mb-1">Latest Epoch</p>
-            <p className="text-green-400 text-lg font-semibold">
-              #{latest.epoch}
-            </p>
-          </div>
-        )}
-        {latest && (
-          <div className="bg-[#111827] rounded-lg p-3 border border-gray-800">
-            <p className="text-gray-500 text-xs mb-1">PoVW Cycles</p>
-            <p className="text-cyan-400 text-lg font-semibold">
-              {fmtCycles(latest.povwCyclesT)}
-            </p>
-          </div>
-        )}
-        {latest && (
-          <>
+      <div className="border border-gray-700 rounded-lg p-3 mb-6">
+        <p className="text-gray-400 text-xs font-semibold uppercase tracking-wider mb-3">Latest Epoch</p>
+        <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
+          {latest && (
             <div className="bg-[#111827] rounded-lg p-3 border border-gray-800">
-              <p className="text-gray-500 text-xs mb-1">Market Cycles</p>
-              <p className="text-purple-400 text-lg font-semibold">
-                {fmtCycles(latest.marketCyclesT)}
+              <p className="text-gray-500 text-xs mb-1">Latest Epoch</p>
+              <p className="text-green-400 text-lg font-semibold">
+                #{latest.epoch}
               </p>
             </div>
+          )}
+          {latest && (
             <div className="bg-[#111827] rounded-lg p-3 border border-gray-800">
-              <p className="text-gray-500 text-xs mb-1">Total</p>
-              <p className="text-cyan-300 text-lg font-semibold">
-                {fmtCycles(latest.povwCyclesT + latest.marketCyclesT)}
+              <p className="text-gray-500 text-xs mb-1">PoVW Cycles</p>
+              <p className="text-cyan-400 text-lg font-semibold">
+                {fmtCycles(latest.povwCyclesT)}
               </p>
             </div>
-            <div className="bg-[#111827] rounded-lg p-3 border border-gray-800">
-              <p className="text-gray-500 text-xs mb-1">% Market</p>
-              <p className="text-amber-400 text-lg font-semibold">
-                {latest.pctMarket.toFixed(1)}%
-              </p>
-            </div>
-          </>
-        )}
+          )}
+          {latest && (
+            <>
+              <div className="bg-[#111827] rounded-lg p-3 border border-gray-800">
+                <p className="text-gray-500 text-xs mb-1">Market Cycles</p>
+                <p className="text-purple-400 text-lg font-semibold">
+                  {fmtCycles(latest.marketCyclesT)}
+                </p>
+              </div>
+              <div className="bg-[#111827] rounded-lg p-3 border border-gray-800">
+                <p className="text-gray-500 text-xs mb-1">Total</p>
+                <p className="text-cyan-300 text-lg font-semibold">
+                  {fmtCycles(latest.povwCyclesT + latest.marketCyclesT)}
+                </p>
+              </div>
+              <div className="bg-[#111827] rounded-lg p-3 border border-gray-800">
+                <p className="text-gray-500 text-xs mb-1">% Market</p>
+                <p className="text-amber-400 text-lg font-semibold">
+                  {latest.pctMarket.toFixed(1)}%
+                </p>
+              </div>
+            </>
+          )}
+        </div>
       </div>
 
       <div className="grid grid-cols-1 xl:grid-cols-2 gap-4 sm:gap-6">

@@ -5,10 +5,14 @@
  * entries into the EpochData shape expected by the frontend, and caches
  * the result in KV for 2 hours.
  *
- * KV binding: EPOCHS_CACHE (key: "epochs")
+ * ZKC prices are fetched per-epoch from the /api/zkc_price endpoint and
+ * cached separately in KV (key: "epoch-prices") to avoid re-fetching on
+ * every invocation.
+ *
+ * KV bindings: EPOCHS_CACHE (keys: "epochs", "epoch-prices")
  *
  * Response headers:
- *   X-Cache: HIT | MISS
+ *   X-Cache: HIT | MISS | STALE
  *   Cache-Control: public, max-age=7200
  */
 
@@ -41,28 +45,107 @@ export interface EpochData {
 
 const UPSTREAM = 'https://explorer.boundless.network/api/base/mining';
 const CACHE_KEY = 'epochs';
+const PRICES_CACHE_KEY = 'epoch-prices';
 const CACHE_TTL_SECONDS = 7200; // 2 hours
 
+/** Derive a YYYY-MM-DD date string from a unix timestamp */
+function toDateKey(ts: number): string {
+  const d = new Date(ts * 1000);
+  return d.toISOString().slice(0, 10);
+}
+
+/** Fetch ZKC price for a single date from the Boundless explorer */
+async function fetchZkcPrice(date: string): Promise<number | null> {
+  try {
+    const res = await fetch(
+      `https://explorer.boundless.network/api/zkc_price?date=${date}`
+    );
+    if (!res.ok) return null;
+    const json = await res.json<{ price: number }>();
+    return json.price ?? null;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Build a map of date-string → zkc_price_usd for all unique dates
+ * referenced by the given epoch entries. Uses KV-cached prices when
+ * available and only fetches missing dates from the upstream API
+ * (parallelised, respecting the 50-subrequest limit).
+ */
+async function buildPriceMap(
+  entries: MiningEntry[],
+  env: Env
+): Promise<Map<string, number>> {
+  // 1. Load cached prices from KV
+  const cachedPricesRaw = await env.EPOCHS_CACHE.get(PRICES_CACHE_KEY);
+  const cachedPrices: Record<string, number> = cachedPricesRaw
+    ? JSON.parse(cachedPricesRaw)
+    : {};
+
+  // 2. Collect unique dates needed
+  const uniqueDates = new Set<string>();
+  for (const e of entries) {
+    uniqueDates.add(toDateKey(e.epoch_start_time));
+  }
+
+  // 3. Identify dates missing from cache
+  const missingDates = [...uniqueDates].filter((d) => !(d in cachedPrices));
+
+  // 4. Fetch missing prices in a single parallel batch
+  //    (Cloudflare Workers free plan: 50 subrequests; paid: 1000)
+  const BATCH_SIZE = 50;
+  for (let i = 0; i < missingDates.length; i += BATCH_SIZE) {
+    const batch = missingDates.slice(i, i + BATCH_SIZE);
+    const results = await Promise.all(
+      batch.map(async (date) => {
+        const price = await fetchZkcPrice(date);
+        return { date, price };
+      })
+    );
+    for (const { date, price } of results) {
+      if (price !== null) {
+        cachedPrices[date] = price;
+      }
+    }
+  }
+
+  // 5. Store updated price map back to KV
+  await env.EPOCHS_CACHE.put(PRICES_CACHE_KEY, JSON.stringify(cachedPrices), {
+    expirationTtl: CACHE_TTL_SECONDS,
+  });
+
+  // Convert to Map for lookup
+  const priceMap = new Map<string, number>();
+  for (const [date, price] of Object.entries(cachedPrices)) {
+    priceMap.set(date, price);
+  }
+  return priceMap;
+}
+
 /** Normalise raw MiningEntry → EpochData, excluding the ongoing (latest) epoch */
-function normaliseEntries(entries: MiningEntry[]): EpochData[] {
-  // zkc_price_usd is not used in any calculation (computePovwRate only needs
-  // mining_rewards_zkc and total_cycles), so we skip the per-epoch price
-  // fetches that would otherwise exhaust the Worker subrequest limit (~100 calls).
-  //
+function normaliseEntries(
+  entries: MiningEntry[],
+  priceMap: Map<string, number>
+): EpochData[] {
   // The API returns entries sorted by epoch descending. The first entry is the
   // ongoing epoch (still accumulating work), so we skip it.
   const sorted = [...entries].sort((a, b) => b.epoch - a.epoch);
   const completed = sorted.slice(1); // skip the ongoing epoch
 
-  return completed.map((e) => ({
-    epoch: e.epoch,
-    timestamp: new Date(e.epoch_start_time * 1000).toISOString(),
-    zkc_price_usd: 0,
-    // total_work is raw cycles as a bigint string
-    total_cycles: Number(BigInt(e.total_work)),
-    // total_capped_rewards is 1e18-scaled ZKC
-    mining_rewards_zkc: Number(BigInt(e.total_capped_rewards)) / 1e18,
-  }));
+  return completed.map((e) => {
+    const dateKey = toDateKey(e.epoch_start_time);
+    return {
+      epoch: e.epoch,
+      timestamp: new Date(e.epoch_start_time * 1000).toISOString(),
+      zkc_price_usd: priceMap.get(dateKey) ?? 0,
+      // total_work is raw cycles as a bigint string
+      total_cycles: Number(BigInt(e.total_work)),
+      // total_capped_rewards is 1e18-scaled ZKC
+      mining_rewards_zkc: Number(BigInt(e.total_capped_rewards)) / 1e18,
+    };
+  });
 }
 
 export const onRequestGet: PagesFunction<Env> = async ({ env }) => {
@@ -86,10 +169,15 @@ export const onRequestGet: PagesFunction<Env> = async ({ env }) => {
     }
     const data = await upstream.json<MiningResponse>();
     const entries = data?.povwEpochs?.entries ?? [];
-    const normalised = normaliseEntries(entries);
+
+    // 3. Build price map (uses KV cache, only fetches missing dates)
+    const priceMap = await buildPriceMap(entries, env);
+
+    // 4. Normalise with prices
+    const normalised = normaliseEntries(entries, priceMap);
     const body = JSON.stringify(normalised);
 
-    // 3. Store in KV with TTL
+    // 5. Store in KV with TTL
     await env.EPOCHS_CACHE.put(CACHE_KEY, body, {
       expirationTtl: CACHE_TTL_SECONDS,
     });
@@ -102,7 +190,7 @@ export const onRequestGet: PagesFunction<Env> = async ({ env }) => {
       },
     });
   } catch (err) {
-    // 4. Graceful degradation — return stale KV data if available
+    // 6. Graceful degradation — return stale KV data if available
     const stale = await env.EPOCHS_CACHE.get(CACHE_KEY);
     if (stale) {
       return new Response(stale, {
@@ -115,9 +203,12 @@ export const onRequestGet: PagesFunction<Env> = async ({ env }) => {
     }
 
     const message = err instanceof Error ? err.message : 'Unknown error';
-    return new Response(JSON.stringify({ error: 'Failed to fetch epoch data', detail: message }), {
-      status: 502,
-      headers: { 'Content-Type': 'application/json' },
-    });
+    return new Response(
+      JSON.stringify({ error: 'Failed to fetch epoch data', detail: message }),
+      {
+        status: 502,
+        headers: { 'Content-Type': 'application/json' },
+      }
+    );
   }
 };
