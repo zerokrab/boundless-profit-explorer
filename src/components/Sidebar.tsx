@@ -125,17 +125,17 @@ export default function Sidebar({ params, onParamsChange, epochs, lookback, onLo
           </div>
           <div>
             <label className={labelCls}>
-              Utilisation %
-              <TooltipIcon text="Fraction of available capacity used for market orders" />
+              Utilization %
+              <TooltipIcon text="Percent of your proving capacity used for market orders" />
             </label>
             <input
               className={inputCls}
               type="number"
               min={0}
-              max={1}
-              step={0.05}
-              value={params.market_order_util}
-              onChange={e => set('market_order_util', Number(e.target.value))}
+              max={100}
+              step={5}
+              value={Math.round(params.market_order_util * 100)}
+              onChange={e => set('market_order_util', Number(e.target.value) / 100)}
             />
           </div>
         </div>
