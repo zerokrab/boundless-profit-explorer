@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from 'react';
 import {
-  LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip,
+  XAxis, YAxis, CartesianGrid, Tooltip,
   ResponsiveContainer, BarChart, Bar, Legend, Area, AreaChart,
 } from 'recharts';
 import type { EpochData } from '../../lib/parseEpochs';
@@ -322,14 +322,14 @@ export default function PovwCycles({ epochs, epochsLoading, epochsError }: Props
           </div>
         )}
 
-        {/* PoVW Reward Rate line chart */}
+        {/* Grinding Rewards chart */}
         {merged.length > 0 && (
           <div className="bg-[#111827] rounded-lg p-3 sm:p-4 border border-gray-800">
             <h3 className="text-gray-200 text-sm font-semibold mb-3">
-              PoVW Reward Rate (ZKC/MHz/epoch)
+              Grinding Rewards
             </h3>
             <ResponsiveContainer width="100%" height={260}>
-              <LineChart data={merged} margin={{ left: 0, right: 10, top: 5, bottom: 5 }}>
+              <AreaChart data={merged} margin={{ left: 0, right: 10, top: 5, bottom: 5 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#1f2937" />
                 <XAxis
                   dataKey="epoch"
@@ -338,48 +338,52 @@ export default function PovwCycles({ epochs, epochsLoading, epochsError }: Props
                   tickLine={false}
                 />
                 <YAxis
-                  yAxisId="rate"
-                  tickFormatter={(v: number) => v.toFixed(5)}
+                  yAxisId="zkc"
                   tick={{ fill: '#9ca3af', fontSize: 9 }}
                   axisLine={false}
                   tickLine={false}
-                  width={65}
+                  width={55}
+                  tickFormatter={(v: number) => `${v.toFixed(0)}K`}
                 />
                 <YAxis
-                  yAxisId="rewards"
+                  yAxisId="usd"
                   orientation="right"
-                  tickFormatter={(v: number) => `${(v / 1000).toFixed(0)}K`}
                   tick={{ fill: '#9ca3af', fontSize: 9 }}
                   axisLine={false}
                   tickLine={false}
-                  width={45}
+                  width={60}
+                  tickFormatter={(v: number) => `$${v.toFixed(0)}`}
                 />
                 <Tooltip
-                  formatter={(v: unknown, name: unknown) => [Number(v).toFixed(5), String(name)]}
+                  formatter={(v: unknown, name: unknown) => {
+                    const n = Number(v);
+                    if (String(name).includes('USD')) return [`$${n.toFixed(2)}`, String(name)];
+                    return [`${n.toFixed(1)}K ZKC`, String(name)];
+                  }}
                   {...tooltipStyle}
                 />
                 <Legend wrapperStyle={{ fontSize: 12, color: '#9ca3af' }} />
-                <Line
-                  yAxisId="rate"
+                <Area
+                  yAxisId="zkc"
                   type="monotone"
-                  dataKey="povwRate"
-                  name="Reward Rate"
-                  stroke="#f59e0b"
-                  strokeWidth={2}
-                  dot={false}
-                  activeDot={{ r: 4, fill: '#f59e0b' }}
-                />
-                <Line
-                  yAxisId="rewards"
-                  type="monotone"
-                  dataKey="miningRewardsK"
-                  name="Mining Rewards (K ZKC)"
+                  dataKey="grindingRewardsZKC"
+                  name="Grinding Rewards (K ZKC)"
                   stroke="#22d3ee"
+                  fill="#22d3ee"
+                  fillOpacity={0.25}
                   strokeWidth={2}
-                  dot={false}
-                  activeDot={{ r: 4, fill: '#22d3ee' }}
                 />
-              </LineChart>
+                <Area
+                  yAxisId="usd"
+                  type="monotone"
+                  dataKey="grindingRewardsUSD"
+                  name="Grinding Rewards (USD)"
+                  stroke="#f59e0b"
+                  fill="#f59e0b"
+                  fillOpacity={0.15}
+                  strokeWidth={2}
+                />
+              </AreaChart>
             </ResponsiveContainer>
           </div>
         )}
