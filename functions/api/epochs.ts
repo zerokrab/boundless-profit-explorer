@@ -43,12 +43,18 @@ const UPSTREAM = 'https://explorer.boundless.network/api/base/mining';
 const CACHE_KEY = 'epochs';
 const CACHE_TTL_SECONDS = 7200; // 2 hours
 
-/** Normalise raw MiningEntry → EpochData */
+/** Normalise raw MiningEntry → EpochData, excluding the ongoing (latest) epoch */
 function normaliseEntries(entries: MiningEntry[]): EpochData[] {
   // zkc_price_usd is not used in any calculation (computePovwRate only needs
   // mining_rewards_zkc and total_cycles), so we skip the per-epoch price
   // fetches that would otherwise exhaust the Worker subrequest limit (~100 calls).
-  return entries.map((e) => ({
+  //
+  // The API returns entries sorted by epoch descending. The first entry is the
+  // ongoing epoch (still accumulating work), so we skip it.
+  const sorted = [...entries].sort((a, b) => b.epoch - a.epoch);
+  const completed = sorted.slice(1); // skip the ongoing epoch
+
+  return completed.map((e) => ({
     epoch: e.epoch,
     timestamp: new Date(e.epoch_start_time * 1000).toISOString(),
     zkc_price_usd: 0,
