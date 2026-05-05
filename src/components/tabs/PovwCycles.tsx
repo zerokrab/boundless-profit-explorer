@@ -4,6 +4,7 @@ import {
   ResponsiveContainer, BarChart, Bar, Legend, Area, AreaChart,
 } from 'recharts';
 import type { EpochData } from '../../lib/parseEpochs';
+import TooltipIcon from '../TooltipIcon';
 
 interface Props {
   epochs: EpochData[];
@@ -148,13 +149,13 @@ export default function PovwCycles({ epochs, epochsLoading, epochsError }: Props
       {/* Overview stats */}
       <div className="grid grid-cols-2 sm:grid-cols-2 gap-3 mb-4">
         <div className="bg-[#111827] rounded-lg p-3 border border-gray-800">
-          <p className="text-gray-500 text-xs mb-1">Total Grinding Rewards</p>
+          <p className="text-gray-500 text-xs mb-1">Total Grinding Rewards<TooltipIcon text="Sum of all grinding rewards in USD across the last 100 epochs" /></p>
           <p className="text-amber-400 text-lg font-semibold">
             {overviewStats.totalGrindingRewardsUSD.toLocaleString('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 })}
           </p>
         </div>
         <div className="bg-[#111827] rounded-lg p-3 border border-gray-800">
-          <p className="text-gray-500 text-xs mb-1" title="Percent of PoVW cycles that are market orders, averaged across all available epochs.">Average % Market (All time)</p>
+          <p className="text-gray-500 text-xs mb-1">Average % Market (All time)<TooltipIcon text="Percent of PoVW cycles that are market orders, averaged across all available epochs." /></p>
           <p className="text-amber-300 text-lg font-semibold">
             {overviewStats.avgPctMarket.toFixed(1)}%
           </p>
@@ -196,7 +197,7 @@ export default function PovwCycles({ epochs, epochsLoading, epochsError }: Props
                 </p>
               </div>
               <div className="bg-[#111827] rounded-lg p-3 border border-gray-800">
-                <p className="text-gray-500 text-xs mb-1" title="Percent of PoVW cycles that are market orders">% Market</p>
+                <p className="text-gray-500 text-xs mb-1">% Market<TooltipIcon text="Percent of PoVW cycles that are market orders" /></p>
                 <p className="text-amber-400 text-lg font-semibold">
                   {latest.pctMarket.toFixed(1)}%
                 </p>
