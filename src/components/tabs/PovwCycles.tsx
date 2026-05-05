@@ -154,7 +154,7 @@ export default function PovwCycles({ epochs, epochsLoading, epochsError }: Props
           </p>
         </div>
         <div className="bg-[#111827] rounded-lg p-3 border border-gray-800">
-          <p className="text-gray-500 text-xs mb-1">Avg PoVW % Market Cycles</p>
+          <p className="text-gray-500 text-xs mb-1" title="Percent of PoVW cycles that are market orders, averaged across all available epochs.">Average % Market (All time)</p>
           <p className="text-amber-300 text-lg font-semibold">
             {overviewStats.avgPctMarket.toFixed(1)}%
           </p>
@@ -196,7 +196,7 @@ export default function PovwCycles({ epochs, epochsLoading, epochsError }: Props
                 </p>
               </div>
               <div className="bg-[#111827] rounded-lg p-3 border border-gray-800">
-                <p className="text-gray-500 text-xs mb-1">% Market</p>
+                <p className="text-gray-500 text-xs mb-1" title="Percent of PoVW cycles that are market orders">% Market</p>
                 <p className="text-amber-400 text-lg font-semibold">
                   {latest.pctMarket.toFixed(1)}%
                 </p>
@@ -230,6 +230,7 @@ export default function PovwCycles({ epochs, epochsLoading, epochsError }: Props
               />
               <Tooltip
                 formatter={(v: unknown, name: unknown) => [fmtCycles(Number(v)), String(name)]}
+                labelFormatter={(label) => `Epoch ${label}`}
                 {...tooltipStyle}
               />
               <Legend wrapperStyle={{ fontSize: 12, color: '#9ca3af' }} />
@@ -279,6 +280,7 @@ export default function PovwCycles({ epochs, epochsLoading, epochsError }: Props
               />
               <Tooltip
                 formatter={(v: unknown, name: unknown) => [fmtPct(Number(v)), String(name)]}
+                labelFormatter={(label) => `Epoch ${label}`}
                 {...tooltipStyle}
               />
               <Area
@@ -318,6 +320,7 @@ export default function PovwCycles({ epochs, epochsLoading, epochsError }: Props
                 />
                 <Tooltip
                   formatter={(v: unknown, name: unknown) => [fmtCycles(Number(v)), String(name)]}
+                  labelFormatter={(label) => `Epoch ${label}`}
                   {...tooltipStyle}
                 />
                 <Bar dataKey="povwCyclesT" name="PoVW Cycles" fill="#22d3ee" radius={[2, 2, 0, 0]} />
@@ -364,6 +367,7 @@ export default function PovwCycles({ epochs, epochsLoading, epochsError }: Props
                     if (String(name).includes('USD')) return [`$${n.toFixed(2)}`, String(name)];
                     return [`${n.toFixed(1)}K ZKC`, String(name)];
                   }}
+                  labelFormatter={(label) => `Epoch ${label}`}
                   {...tooltipStyle}
                 />
                 <Legend wrapperStyle={{ fontSize: 12, color: '#9ca3af' }} />
@@ -371,7 +375,7 @@ export default function PovwCycles({ epochs, epochsLoading, epochsError }: Props
                   yAxisId="zkc"
                   type="monotone"
                   dataKey="grindingRewardsZKC"
-                  name="Grinding Rewards (K ZKC)"
+                  name="Grinding Rewards (ZKC)"
                   stroke="#22d3ee"
                   fill="#22d3ee"
                   fillOpacity={0.25}
