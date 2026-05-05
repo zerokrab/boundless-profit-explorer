@@ -1,9 +1,10 @@
 import { useState, useEffect, useMemo } from 'react';
 import {
-  LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip,
+  XAxis, YAxis, CartesianGrid, Tooltip,
   ResponsiveContainer, BarChart, Bar, Legend, Area, AreaChart,
 } from 'recharts';
 import type { EpochData } from '../../lib/parseEpochs';
+import TooltipIcon from '../TooltipIcon';
 
 interface Props {
   epochs: EpochData[];
@@ -29,6 +30,8 @@ interface EpochPoint {
   pctMarket: number;         // marketCycles / (marketCycles + povwCycles) * 100
   miningRewardsK: number;    // mining rewards in thousands of ZKC
   povwRate: number;           // ZKC per MHz per epoch
+  grindingRewardsZKC: number; // mining_rewards * (1 - pctMarket/100) in K ZKC
+  grindingRewardsUSD: number; // grindingRewardsZKC * zkc_price_usd
 }
 
 const fmtCycles = (v: number) => {
@@ -62,6 +65,8 @@ function mergeEpochData(
       const marketCycles = ms?.marketCycles ?? 0;
       const totalAll = povwCycles + marketCycles;
       const pctMarket = totalAll > 0 ? (marketCycles / totalAll) * 100 : 0;
+      const grindingRewardsZKC = miningRewards * (1 - pctMarket / 100);
+      const grindingRewardsUSD = grindingRewardsZKC * (e.zkc_price_usd ?? 0);
 
       return {
         epoch: e.epoch,
@@ -70,6 +75,8 @@ function mergeEpochData(
         pctMarket: parseFloat(pctMarket.toFixed(2)),
         miningRewardsK: parseFloat((miningRewards / 1000).toFixed(2)),
         povwRate: parseFloat(povwRate.toFixed(5)),
+        grindingRewardsZKC: parseFloat((grindingRewardsZKC / 1000).toFixed(2)),
+        grindingRewardsUSD: parseFloat(grindingRewardsUSD.toFixed(2)),
       };
     });
 }
@@ -99,8 +106,15 @@ export default function PovwCycles({ epochs, epochsLoading, epochsError }: Props
 
   const loading = epochsLoading || statsLoading;
   const hasData = epochs.length > 0 || marketStats.length > 0;
-  const merged = useMemo(() => mergeEpochData(epochs, marketStats), [epochs, marketStats]);
+  const mergedAll = useMemo(() => mergeEpochData(epochs, marketStats), [epochs, marketStats]);
+  const merged = mergedAll.length > 100 ? mergedAll.slice(-100) : mergedAll;
   const latest = merged.length > 0 ? merged[merged.length - 1] : null;
+  const overviewStats = useMemo(() => {
+    if (merged.length === 0) return { totalGrindingRewardsUSD: 0, avgPctMarket: 0 };
+    const totalGrindingRewardsUSD = merged.reduce((s, e) => s + e.grindingRewardsUSD, 0);
+    const avgPctMarket = merged.reduce((s, e) => s + e.pctMarket, 0) / merged.length;
+    return { totalGrindingRewardsUSD, avgPctMarket };
+  }, [merged]);
 
   if (loading && !hasData) {
     return (
@@ -132,46 +146,65 @@ export default function PovwCycles({ epochs, epochsLoading, epochsError }: Props
         </p>
       </div>
 
-      {/* Summary cards */}
-      <div className="grid grid-cols-2 sm:grid-cols-5 gap-3 mb-6">
-        {latest && (
-          <div className="bg-[#111827] rounded-lg p-3 border border-gray-800">
-            <p className="text-gray-500 text-xs mb-1">Latest Epoch</p>
-            <p className="text-green-400 text-lg font-semibold">
-              #{latest.epoch}
-            </p>
-          </div>
-        )}
-        {latest && (
-          <div className="bg-[#111827] rounded-lg p-3 border border-gray-800">
-            <p className="text-gray-500 text-xs mb-1">PoVW Cycles</p>
-            <p className="text-cyan-400 text-lg font-semibold">
-              {fmtCycles(latest.povwCyclesT)}
-            </p>
-          </div>
-        )}
-        {latest && (
-          <>
+      {/* Overview stats */}
+      <div className="grid grid-cols-2 sm:grid-cols-2 gap-3 mb-4">
+        <div className="bg-[#111827] rounded-lg p-3 border border-gray-800">
+          <p className="text-gray-500 text-xs mb-1">Total Grinding Rewards<TooltipIcon text="Sum of all grinding rewards in USD across the last 100 epochs" /></p>
+          <p className="text-amber-400 text-lg font-semibold">
+            {overviewStats.totalGrindingRewardsUSD.toLocaleString('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 })}
+          </p>
+        </div>
+        <div className="bg-[#111827] rounded-lg p-3 border border-gray-800">
+          <p className="text-gray-500 text-xs mb-1">Average % Market (All time)<TooltipIcon text="Percent of PoVW cycles that are market orders, averaged across all available epochs." /></p>
+          <p className="text-amber-300 text-lg font-semibold">
+            {overviewStats.avgPctMarket.toFixed(1)}%
+          </p>
+        </div>
+      </div>
+
+      {/* Latest Epoch stats */}
+      <div className="border border-gray-700 rounded-lg p-3 mb-6">
+        <p className="text-gray-400 text-xs font-semibold uppercase tracking-wider mb-3">Latest Epoch</p>
+        <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
+          {latest && (
             <div className="bg-[#111827] rounded-lg p-3 border border-gray-800">
-              <p className="text-gray-500 text-xs mb-1">Market Cycles</p>
-              <p className="text-purple-400 text-lg font-semibold">
-                {fmtCycles(latest.marketCyclesT)}
+              <p className="text-gray-500 text-xs mb-1">Epoch</p>
+              <p className="text-green-400 text-lg font-semibold">
+                #{latest.epoch}
               </p>
             </div>
+          )}
+          {latest && (
             <div className="bg-[#111827] rounded-lg p-3 border border-gray-800">
-              <p className="text-gray-500 text-xs mb-1">Total</p>
-              <p className="text-cyan-300 text-lg font-semibold">
-                {fmtCycles(latest.povwCyclesT + latest.marketCyclesT)}
+              <p className="text-gray-500 text-xs mb-1">PoVW Cycles</p>
+              <p className="text-cyan-400 text-lg font-semibold">
+                {fmtCycles(latest.povwCyclesT)}
               </p>
             </div>
-            <div className="bg-[#111827] rounded-lg p-3 border border-gray-800">
-              <p className="text-gray-500 text-xs mb-1">% Market</p>
-              <p className="text-amber-400 text-lg font-semibold">
-                {latest.pctMarket.toFixed(1)}%
-              </p>
-            </div>
-          </>
-        )}
+          )}
+          {latest && (
+            <>
+              <div className="bg-[#111827] rounded-lg p-3 border border-gray-800">
+                <p className="text-gray-500 text-xs mb-1">Market Cycles</p>
+                <p className="text-purple-400 text-lg font-semibold">
+                  {fmtCycles(latest.marketCyclesT)}
+                </p>
+              </div>
+              <div className="bg-[#111827] rounded-lg p-3 border border-gray-800">
+                <p className="text-gray-500 text-xs mb-1">Total</p>
+                <p className="text-cyan-300 text-lg font-semibold">
+                  {fmtCycles(latest.povwCyclesT + latest.marketCyclesT)}
+                </p>
+              </div>
+              <div className="bg-[#111827] rounded-lg p-3 border border-gray-800">
+                <p className="text-gray-500 text-xs mb-1">% Market<TooltipIcon text="Percent of PoVW cycles that are market orders" /></p>
+                <p className="text-amber-400 text-lg font-semibold">
+                  {latest.pctMarket.toFixed(1)}%
+                </p>
+              </div>
+            </>
+          )}
+        </div>
       </div>
 
       <div className="grid grid-cols-1 xl:grid-cols-2 gap-4 sm:gap-6">
@@ -198,6 +231,7 @@ export default function PovwCycles({ epochs, epochsLoading, epochsError }: Props
               />
               <Tooltip
                 formatter={(v: unknown, name: unknown) => [fmtCycles(Number(v)), String(name)]}
+                labelFormatter={(label) => `Epoch ${label}`}
                 {...tooltipStyle}
               />
               <Legend wrapperStyle={{ fontSize: 12, color: '#9ca3af' }} />
@@ -247,6 +281,7 @@ export default function PovwCycles({ epochs, epochsLoading, epochsError }: Props
               />
               <Tooltip
                 formatter={(v: unknown, name: unknown) => [fmtPct(Number(v)), String(name)]}
+                labelFormatter={(label) => `Epoch ${label}`}
                 {...tooltipStyle}
               />
               <Area
@@ -286,6 +321,7 @@ export default function PovwCycles({ epochs, epochsLoading, epochsError }: Props
                 />
                 <Tooltip
                   formatter={(v: unknown, name: unknown) => [fmtCycles(Number(v)), String(name)]}
+                  labelFormatter={(label) => `Epoch ${label}`}
                   {...tooltipStyle}
                 />
                 <Bar dataKey="povwCyclesT" name="PoVW Cycles" fill="#22d3ee" radius={[2, 2, 0, 0]} />
@@ -294,14 +330,14 @@ export default function PovwCycles({ epochs, epochsLoading, epochsError }: Props
           </div>
         )}
 
-        {/* PoVW Reward Rate line chart */}
+        {/* Grinding Rewards chart */}
         {merged.length > 0 && (
           <div className="bg-[#111827] rounded-lg p-3 sm:p-4 border border-gray-800">
             <h3 className="text-gray-200 text-sm font-semibold mb-3">
-              PoVW Reward Rate (ZKC/MHz/epoch)
+              Grinding Rewards
             </h3>
             <ResponsiveContainer width="100%" height={260}>
-              <LineChart data={merged} margin={{ left: 0, right: 10, top: 5, bottom: 5 }}>
+              <AreaChart data={merged} margin={{ left: 0, right: 10, top: 5, bottom: 5 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#1f2937" />
                 <XAxis
                   dataKey="epoch"
@@ -310,48 +346,53 @@ export default function PovwCycles({ epochs, epochsLoading, epochsError }: Props
                   tickLine={false}
                 />
                 <YAxis
-                  yAxisId="rate"
-                  tickFormatter={(v: number) => v.toFixed(5)}
+                  yAxisId="zkc"
                   tick={{ fill: '#9ca3af', fontSize: 9 }}
                   axisLine={false}
                   tickLine={false}
-                  width={65}
+                  width={55}
+                  tickFormatter={(v: number) => `${v.toFixed(0)}K`}
                 />
                 <YAxis
-                  yAxisId="rewards"
+                  yAxisId="usd"
                   orientation="right"
-                  tickFormatter={(v: number) => `${(v / 1000).toFixed(0)}K`}
                   tick={{ fill: '#9ca3af', fontSize: 9 }}
                   axisLine={false}
                   tickLine={false}
-                  width={45}
+                  width={60}
+                  tickFormatter={(v: number) => `$${v.toFixed(0)}`}
                 />
                 <Tooltip
-                  formatter={(v: unknown, name: unknown) => [Number(v).toFixed(5), String(name)]}
+                  formatter={(v: unknown, name: unknown) => {
+                    const n = Number(v);
+                    if (String(name).includes('USD')) return [`$${n.toFixed(2)}`, String(name)];
+                    return [`${n.toFixed(1)}K ZKC`, String(name)];
+                  }}
+                  labelFormatter={(label) => `Epoch ${label}`}
                   {...tooltipStyle}
                 />
                 <Legend wrapperStyle={{ fontSize: 12, color: '#9ca3af' }} />
-                <Line
-                  yAxisId="rate"
+                <Area
+                  yAxisId="zkc"
                   type="monotone"
-                  dataKey="povwRate"
-                  name="Reward Rate"
-                  stroke="#f59e0b"
-                  strokeWidth={2}
-                  dot={false}
-                  activeDot={{ r: 4, fill: '#f59e0b' }}
-                />
-                <Line
-                  yAxisId="rewards"
-                  type="monotone"
-                  dataKey="miningRewardsK"
-                  name="Mining Rewards (K ZKC)"
+                  dataKey="grindingRewardsZKC"
+                  name="Grinding Rewards (ZKC)"
                   stroke="#22d3ee"
+                  fill="#22d3ee"
+                  fillOpacity={0.25}
                   strokeWidth={2}
-                  dot={false}
-                  activeDot={{ r: 4, fill: '#22d3ee' }}
                 />
-              </LineChart>
+                <Area
+                  yAxisId="usd"
+                  type="monotone"
+                  dataKey="grindingRewardsUSD"
+                  name="Grinding Rewards (USD)"
+                  stroke="#f59e0b"
+                  fill="#f59e0b"
+                  fillOpacity={0.15}
+                  strokeWidth={2}
+                />
+              </AreaChart>
             </ResponsiveContainer>
           </div>
         )}
