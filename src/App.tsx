@@ -1,4 +1,5 @@
 import { useState, useMemo, useEffect, useCallback } from 'react';
+import { Routes, Route, NavLink, Navigate, Outlet, useLocation } from 'react-router-dom';
 import { computeResults } from './lib/compute';
 import type { ModelParams } from './lib/compute';
 import { computePovwRate } from './lib/parseEpochs';
@@ -14,11 +15,16 @@ import { Menu } from 'lucide-react';
 
 const DEFAULT_LOOKBACK = 10;
 
-type Page = 'Calculator' | 'PoVW Cycles';
-const PAGES: Page[] = ['Calculator', 'PoVW Cycles'];
+const PAGES: { label: string; path: string }[] = [
+  { label: 'Calculator', path: '/' },
+  { label: 'PoVW Cycles', path: '/povw-cycles' },
+];
 
-const CALCULATOR_TABS = ['Profit Explorer', 'Break-even', 'Scenarios'] as const;
-type Tab = typeof CALCULATOR_TABS[number];
+const CALCULATOR_TABS: { label: string; path: string }[] = [
+  { label: 'Profit Explorer', path: '/' },
+  { label: 'Break-even', path: '/break-even' },
+  { label: 'Scenarios', path: '/scenarios' },
+];
 
 const DEFAULT_PARAMS: ModelParams = {
   gpuConfigs: [
@@ -47,13 +53,14 @@ const GITHUB_URL = 'https://github.com/zerokrab/boundless-profit-explorer';
 export default function App() {
   const [params, setParams] = useLocalStorage<ModelParams>('params', DEFAULT_PARAMS);
   const [lookback, setLookback] = useLocalStorage<number>('lookback', DEFAULT_LOOKBACK);
-  const [activePage, setActivePage] = useState<Page>('Calculator');
-  const [activeTab, setActiveTab] = useState<Tab>('Profit Explorer');
   const [epochs, setEpochs] = useState<EpochData[]>([]);
   const [epochsLoading, setEpochsLoading] = useState(true);
   const [epochsError, setEpochsError] = useState<string | null>(null);
   const [liveZkcPrice, setLiveZkcPrice] = useState<number | null>(null);
   const [sidebarOpen, setSidebarOpen] = useState(false);
+
+  const location = useLocation();
+  const isCalcPage = location.pathname !== '/povw-cycles';
 
   // Fetch epoch data from Pages Function (falls back to bundled JSON in dev)
   useEffect(() => {
@@ -104,18 +111,6 @@ export default function App() {
 
   const results = useMemo(() => computeResults(params), [params]);
 
-  const handleTabChange = (tab: Tab) => {
-    setActiveTab(tab);
-    setSidebarOpen(false);
-  };
-
-  const handlePageChange = (page: Page) => {
-    setActivePage(page);
-    setSidebarOpen(false);
-  };
-
-  const isCalcPage = activePage === 'Calculator';
-
   return (
     <div className="flex flex-col h-screen bg-[#0a0f1e] text-gray-100 overflow-hidden">
       {/* ---- Top bar: brand + page nav + right-side info ---- */}
@@ -140,17 +135,20 @@ export default function App() {
           {/* Page-level navigation — pill-style, visually distinct from sub-tabs */}
           <nav className="flex items-center gap-1 ml-4 sm:ml-8 overflow-x-auto scrollbar-hide">
             {PAGES.map(page => (
-              <button
-                key={page}
-                onClick={() => handlePageChange(page)}
-                className={`px-3 py-1.5 text-xs font-semibold rounded-md transition-colors whitespace-nowrap ${
-                  activePage === page
-                    ? 'bg-cyan-400/15 text-cyan-400'
-                    : 'text-gray-400 hover:text-gray-200 hover:bg-gray-800/50'
-                }`}
+              <NavLink
+                key={page.path}
+                to={page.path}
+                end={page.path === '/'}
+                className={({ isActive }) =>
+                  `px-3 py-1.5 text-xs font-semibold rounded-md transition-colors whitespace-nowrap ${
+                    isActive
+                      ? 'bg-cyan-400/15 text-cyan-400'
+                      : 'text-gray-400 hover:text-gray-200 hover:bg-gray-800/50'
+                  }`
+                }
               >
-                {page}
-              </button>
+                {page.label}
+              </NavLink>
             ))}
           </nav>
 
@@ -205,20 +203,24 @@ export default function App() {
               </a>
             </span>
           </div>
-          {/* Sub-tab buttons */}
+          {/* Sub-tab navigation */}
           <div className="flex items-center px-3 sm:px-6 gap-0 overflow-x-auto scrollbar-hide">
             {CALCULATOR_TABS.map(tab => (
-              <button
-                key={tab}
-                onClick={() => handleTabChange(tab)}
-                className={`px-3 sm:px-4 py-2.5 text-xs sm:text-sm font-medium transition-colors border-b-2 -mb-px whitespace-nowrap flex-shrink-0 ${
-                  activeTab === tab
-                    ? 'border-cyan-400 text-cyan-400'
-                    : 'border-transparent text-gray-400 hover:text-gray-200'
-                }`}
+              <NavLink
+                key={tab.path}
+                to={tab.path}
+                end={tab.path === '/'}
+                onClick={() => setSidebarOpen(false)}
+                className={({ isActive }) =>
+                  `px-3 sm:px-4 py-2.5 text-xs sm:text-sm font-medium transition-colors border-b-2 -mb-px whitespace-nowrap flex-shrink-0 ${
+                    isActive
+                      ? 'border-cyan-400 text-cyan-400'
+                      : 'border-transparent text-gray-400 hover:text-gray-200'
+                  }`
+                }
               >
-                {tab}
-              </button>
+                {tab.label}
+              </NavLink>
             ))}
           </div>
         </div>
@@ -226,63 +228,70 @@ export default function App() {
 
       {/* ---- Page content area ---- */}
       <div className="flex-1 overflow-hidden">
-        {isCalcPage ? (
-          /* Calculator page: sidebar + main content */
-          <div className="flex h-full">
-            {/* Mobile sidebar backdrop */}
-            {sidebarOpen && (
-              <div
-                className="fixed inset-0 bg-black/60 z-20 lg:hidden"
-                onClick={() => setSidebarOpen(false)}
-              />
-            )}
+        <Routes>
+          {/* Calculator routes with sidebar layout */}
+          <Route
+            path="/"
+            element={
+              <div className="flex h-full">
+                {/* Mobile sidebar backdrop */}
+                {sidebarOpen && (
+                  <div
+                    className="fixed inset-0 bg-black/60 z-20 lg:hidden"
+                    onClick={() => setSidebarOpen(false)}
+                  />
+                )}
 
-            {/* Sidebar — hidden off-screen on mobile, visible on lg+ */}
-            <div className={`
-              fixed lg:static inset-y-0 left-0 z-30
-              transform transition-transform duration-200 ease-in-out
-              ${sidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}
-            `}>
-              <Sidebar
-                params={params}
-                onParamsChange={setParams}
-                epochs={epochs}
-                lookback={lookback}
-                onLookbackChange={setLookback}
-                onClose={() => setSidebarOpen(false)}
-              />
-            </div>
-
-            {/* Calculator main content */}
-            <div className="flex-1 overflow-auto pb-0 min-w-0">
-              {epochsLoading ? (
-                <div className="flex items-center justify-center h-full">
-                  <div className="text-center">
-                    <div className="text-4xl mb-4 animate-pulse">⬡</div>
-                    <p className="text-gray-400">Loading epoch data…</p>
-                  </div>
+                {/* Sidebar — hidden off-screen on mobile, visible on lg+ */}
+                <div className={`
+                  fixed lg:static inset-y-0 left-0 z-30
+                  transform transition-transform duration-200 ease-in-out
+                  ${sidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}
+                `}>
+                  <Sidebar
+                    params={params}
+                    onParamsChange={setParams}
+                    epochs={epochs}
+                    lookback={lookback}
+                    onLookbackChange={setLookback}
+                    onClose={() => setSidebarOpen(false)}
+                  />
                 </div>
-              ) : (
-                <>
-                  {activeTab === 'Profit Explorer' && (
-                    <ProfitExplorer params={params} results={results} liveZkcPrice={liveZkcPrice} />
+
+                {/* Calculator main content */}
+                <div className="flex-1 overflow-auto pb-0 min-w-0">
+                  {epochsLoading ? (
+                    <div className="flex items-center justify-center h-full">
+                      <div className="text-center">
+                        <div className="text-4xl mb-4 animate-pulse">⬡</div>
+                        <p className="text-gray-400">Loading epoch data…</p>
+                      </div>
+                    </div>
+                  ) : (
+                    <Outlet />
                   )}
-                  {activeTab === 'Break-even' && (
-                    <Breakeven params={params} liveZkcPrice={liveZkcPrice} />
-                  )}
-                  {activeTab === 'Scenarios' && (
-                    <Scenarios results={results} liveZkcPrice={liveZkcPrice} />
-                  )}
-                </>
-              )}
-            </div>
-          </div>
-        ) : (
-          /* PoVW Cycles page: full-width, no sidebar */
-          <div className="h-full overflow-auto">
-            <PovwCycles epochs={epochs} epochsLoading={epochsLoading} epochsError={epochsError} />
-          </div>
-        )}
+                </div>
+              </div>
+            }
+          >
+            <Route index element={<ProfitExplorer params={params} results={results} liveZkcPrice={liveZkcPrice} />} />
+            <Route path="break-even" element={<Breakeven params={params} liveZkcPrice={liveZkcPrice} />} />
+            <Route path="scenarios" element={<Scenarios results={results} liveZkcPrice={liveZkcPrice} />} />
+          </Route>
+
+          {/* PoVW Cycles page — full-width, no sidebar */}
+          <Route
+            path="/povw-cycles"
+            element={
+              <div className="h-full overflow-auto">
+                <PovwCycles epochs={epochs} epochsLoading={epochsLoading} epochsError={epochsError} />
+              </div>
+            }
+          />
+
+          {/* Catch-all: redirect unknown paths to home */}
+          <Route path="*" element={<Navigate to="/" replace />} />
+        </Routes>
       </div>
 
       {/* Footer */}
