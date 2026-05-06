@@ -396,6 +396,45 @@ export default function PovwCycles({ epochs, epochsLoading, epochsError }: Props
             </ResponsiveContainer>
           </div>
         )}
+
+        {/* PoVW Reward Rate chart */}
+        <div className="bg-[#111827] rounded-lg p-3 sm:p-4 border border-gray-800">
+          <h3 className="text-gray-200 text-sm font-semibold mb-3">
+            PoVW Reward Rate (ZKC/MHz)
+          </h3>
+          <ResponsiveContainer width="100%" height={260}>
+            <AreaChart data={merged} margin={{ left: 0, right: 10, top: 5, bottom: 5 }}>
+              <CartesianGrid strokeDasharray="3 3" stroke="#1f2937" />
+              <XAxis
+                dataKey="epoch"
+                tick={{ fill: '#9ca3af', fontSize: 9 }}
+                axisLine={{ stroke: '#374151' }}
+                tickLine={false}
+              />
+              <YAxis
+                tick={{ fill: '#9ca3af', fontSize: 9 }}
+                axisLine={false}
+                tickLine={false}
+                width={60}
+                tickFormatter={(v) => v.toFixed(5)}
+              />
+              <Tooltip
+                formatter={(v: unknown) => [`${Number(v).toFixed(5)} ZKC/MHz`, 'Reward Rate']}
+                labelFormatter={(label) => `Epoch ${label}`}
+                {...tooltipStyle}
+              />
+              <Area
+                type="monotone"
+                dataKey="povwRate"
+                name="PoVW Rate"
+                stroke="#22d3ee"
+                fill="#22d3ee"
+                fillOpacity={0.25}
+                strokeWidth={2}
+              />
+            </AreaChart>
+          </ResponsiveContainer>
+        </div>
       </div>
 
     </div>
