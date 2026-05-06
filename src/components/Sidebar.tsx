@@ -146,11 +146,14 @@ export default function Sidebar({ params, onParamsChange, epochs, lookback, onLo
         <div className={sectionCls}>
           <h2 className="text-gray-300 text-xs font-semibold uppercase tracking-wider mb-2">
             PoVW Mining
-            <TooltipIcon text="Proof-of-Verifiable-Work: mining rewards are computed automatically from live epoch data" />
+            <TooltipIcon text="PoVW mining reward rate computed automatically from live epoch data." />
           </h2>
 
           <div className="mb-2">
-            <label className={labelCls}>Lookback (epochs)</label>
+            <label className={labelCls}>
+              Lookback (epochs)
+              <TooltipIcon text="Number of past epochs to include in calculation" />
+            </label>
             <input
               className={inputCls}
               type="number"
@@ -161,7 +164,10 @@ export default function Sidebar({ params, onParamsChange, epochs, lookback, onLo
             />
           </div>
           <div>
-            <label className={labelCls}>PoVW rate (auto)</label>
+            <label className={labelCls}>
+              PoVW rate (auto)
+              <TooltipIcon text="Computed as the mean of (mining_rewards_zkc / (total_cycles / 1e6)) over the specified lookback period" />
+            </label>
             <div className="w-full bg-[#0a0f1e] border border-gray-700 rounded px-2 py-1 text-cyan-400 font-mono text-sm">
               {computedPovw.toFixed(5)} ZKC/MHz/epoch
             </div>
