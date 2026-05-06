@@ -131,7 +131,7 @@ function normaliseEntries(
 ): EpochData[] {
   // The API returns entries sorted by epoch descending. The first entry is the
   // ongoing epoch (still accumulating work), so we skip it.
-  const sorted = [...entries].sort((a, b) => b.epoch - a.epoch);
+  const sorted = [...entries].sort((a, b) => b.epoch - a.epoch).slice(0, 101);
   const completed = sorted.slice(1); // skip the ongoing epoch
 
   return completed.map((e) => {
