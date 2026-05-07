@@ -9,7 +9,7 @@
  * cached separately in KV (key: "epoch-prices") to avoid re-fetching on
  * every invocation.
  *
- * KV binding: EPOCHS_CACHE (keys: "epochs", "epoch-prices")
+ * KV binding: EPOCHS_CACHE (keys: "epochs", "epoch-prices", "epochs-historical")
  *
  * Response headers:
  *   X-Cache: HIT | MISS | STALE
@@ -46,6 +46,7 @@ export interface EpochData {
 const UPSTREAM = 'https://explorer.boundless.network/api/base/mining';
 const CACHE_KEY = 'epochs';
 const PRICES_CACHE_KEY = 'epoch-prices';
+const HISTORICAL_CACHE_KEY = 'epochs-historical';
 const CACHE_TTL_SECONDS = 7200; // 2 hours
 
 /** Derive a YYYY-MM-DD date string from a unix timestamp */
@@ -161,6 +162,27 @@ function applyLimit(data: EpochData[], limit: number | null): EpochData[] {
   return limit !== null ? data.slice(0, limit) : data;
 }
 
+/**
+ * Merge freshly fetched entries with the historical store, deduplicating
+ * by epoch number. The latest data wins (upstream entries are assumed
+ * more current for the ongoing epoch; historical data provides the tail
+ * that has dropped off the upstream window).
+ */
+function mergeHistoricalEntries(
+  fresh: MiningEntry[],
+  historical: MiningEntry[]
+): MiningEntry[] {
+  const byEpoch = new Map<number, MiningEntry>();
+  // Seed with historical first, then overwrite with fresh (fresh wins)
+  for (const e of historical) {
+    byEpoch.set(e.epoch, e);
+  }
+  for (const e of fresh) {
+    byEpoch.set(e.epoch, e);
+  }
+  return [...byEpoch.values()];
+}
+
 export const onRequestGet: PagesFunction<Env> = async ({ request, env }) => {
   const limit = parseLimit(request);
 
@@ -185,15 +207,24 @@ export const onRequestGet: PagesFunction<Env> = async ({ request, env }) => {
       throw new Error(`Upstream returned ${upstream.status}`);
     }
     const data = await upstream.json<MiningResponse>();
-    const entries = data?.povwEpochs?.entries ?? [];
+    const freshEntries = data?.povwEpochs?.entries ?? [];
 
-    // 3. Build price map (uses KV cache, only fetches missing dates)
-    const priceMap = await buildPriceMap(entries, env);
+    // 3. Merge with historical KV store (permanent, no TTL)
+    const historicalRaw = await env.EPOCHS_CACHE.get(HISTORICAL_CACHE_KEY);
+    const historicalEntries: MiningEntry[] = historicalRaw
+      ? JSON.parse(historicalRaw)
+      : [];
+    const mergedEntries = mergeHistoricalEntries(freshEntries, historicalEntries);
+    // Persist the merged dataset back (no TTL — historical data is immutable)
+    await env.EPOCHS_CACHE.put(HISTORICAL_CACHE_KEY, JSON.stringify(mergedEntries));
 
-    // 4. Normalise with prices
-    const normalised = normaliseEntries(entries, priceMap);
+    // 4. Build price map (uses KV cache, only fetches missing dates)
+    const priceMap = await buildPriceMap(mergedEntries, env);
 
-    // 5. Store full dataset in KV with TTL (limit is applied per-request, not cached)
+    // 5. Normalise with prices
+    const normalised = normaliseEntries(mergedEntries, priceMap);
+
+    // 6. Store full dataset in KV with TTL (limit is applied per-request, not cached)
     const body = JSON.stringify(normalised);
     await env.EPOCHS_CACHE.put(CACHE_KEY, body, {
       expirationTtl: CACHE_TTL_SECONDS,
@@ -207,7 +238,7 @@ export const onRequestGet: PagesFunction<Env> = async ({ request, env }) => {
       },
     });
   } catch (err) {
-    // 6. Graceful degradation — return stale KV data if available
+    // 7. Graceful degradation — return stale KV data if available
     const stale = await env.EPOCHS_CACHE.get(CACHE_KEY);
     if (stale) {
       const data: EpochData[] = JSON.parse(stale);
