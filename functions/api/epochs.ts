@@ -147,11 +147,29 @@ function normaliseEntries(
   });
 }
 
-export const onRequestGet: PagesFunction<Env> = async ({ env }) => {
+/** Parse the `limit` query parameter; returns null for absent/invalid values. */
+function parseLimit(request: Request): number | null {
+  const url = new URL(request.url);
+  const raw = url.searchParams.get('limit');
+  if (raw === null) return null;
+  const n = parseInt(raw, 10);
+  return Number.isFinite(n) && n > 0 ? n : null;
+}
+
+/** Apply limit to parsed epoch data — returns the same array reference when no limit. */
+function applyLimit(data: EpochData[], limit: number | null): EpochData[] {
+  return limit !== null ? data.slice(0, limit) : data;
+}
+
+export const onRequestGet: PagesFunction<Env> = async ({ request, env }) => {
+  const limit = parseLimit(request);
+
   // 1. Try KV cache first
   const cached = await env.EPOCHS_CACHE.get(CACHE_KEY);
   if (cached) {
-    return new Response(cached, {
+    const data: EpochData[] = JSON.parse(cached);
+    const body = JSON.stringify(applyLimit(data, limit));
+    return new Response(body, {
       headers: {
         'Content-Type': 'application/json',
         'X-Cache': 'HIT',
@@ -174,14 +192,14 @@ export const onRequestGet: PagesFunction<Env> = async ({ env }) => {
 
     // 4. Normalise with prices
     const normalised = normaliseEntries(entries, priceMap);
-    const body = JSON.stringify(normalised);
 
-    // 5. Store in KV with TTL
+    // 5. Store full dataset in KV with TTL (limit is applied per-request, not cached)
+    const body = JSON.stringify(normalised);
     await env.EPOCHS_CACHE.put(CACHE_KEY, body, {
       expirationTtl: CACHE_TTL_SECONDS,
     });
 
-    return new Response(body, {
+    return new Response(JSON.stringify(applyLimit(normalised, limit)), {
       headers: {
         'Content-Type': 'application/json',
         'X-Cache': 'MISS',
@@ -192,7 +210,9 @@ export const onRequestGet: PagesFunction<Env> = async ({ env }) => {
     // 6. Graceful degradation — return stale KV data if available
     const stale = await env.EPOCHS_CACHE.get(CACHE_KEY);
     if (stale) {
-      return new Response(stale, {
+      const data: EpochData[] = JSON.parse(stale);
+      const body = JSON.stringify(applyLimit(data, limit));
+      return new Response(body, {
         headers: {
           'Content-Type': 'application/json',
           'X-Cache': 'STALE',
