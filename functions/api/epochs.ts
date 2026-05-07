@@ -111,10 +111,9 @@ async function buildPriceMap(
     }
   }
 
-  // 5. Store updated price map back to KV
-  await env.EPOCHS_CACHE.put(PRICES_CACHE_KEY, JSON.stringify(cachedPrices), {
-    expirationTtl: CACHE_TTL_SECONDS,
-  });
+  // 5. Store updated price map back to KV (no TTL — historical prices are immutable
+  //    and should never expire; only new dates are fetched on each invocation)
+  await env.EPOCHS_CACHE.put(PRICES_CACHE_KEY, JSON.stringify(cachedPrices));
 
   // Convert to Map for lookup
   const priceMap = new Map<string, number>();
