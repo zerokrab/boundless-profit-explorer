@@ -30,6 +30,7 @@ interface EpochPoint {
   pctMarket: number;         // marketCycles / (marketCycles + povwCycles) * 100
   miningRewardsK: number;    // mining rewards in thousands of ZKC
   povwRate: number;           // ZKC per MHz per epoch
+  povwRateUSD: number;        // USD per MHz per epoch (povwRate * zkc_price_usd)
   grindingRewardsZKC: number; // mining_rewards * (1 - pctMarket/100) in K ZKC
   grindingRewardsUSD: number; // grindingRewardsZKC * zkc_price_usd
 }
@@ -61,6 +62,7 @@ function mergeEpochData(
       const povwCycles = e.total_cycles ?? 0;
       const miningRewards = e.mining_rewards_zkc ?? 0;
       const povwRate = povwCycles > 0 ? miningRewards / (povwCycles / 1e6) : 0;
+      const povwRateUSD = povwRate * (e.zkc_price_usd ?? 0);
       const ms = marketByEpoch.get(e.epoch);
       const marketCycles = ms?.marketCycles ?? 0;
       const totalAll = povwCycles + marketCycles;
@@ -75,6 +77,7 @@ function mergeEpochData(
         pctMarket: parseFloat(pctMarket.toFixed(2)),
         miningRewardsK: parseFloat((miningRewards / 1000).toFixed(2)),
         povwRate: parseFloat(povwRate.toFixed(5)),
+        povwRateUSD: parseFloat(povwRateUSD.toFixed(5)),
         grindingRewardsZKC: parseFloat((grindingRewardsZKC / 1000).toFixed(2)),
         grindingRewardsUSD: parseFloat(grindingRewardsUSD.toFixed(2)),
       };
@@ -400,7 +403,7 @@ export default function PovwCycles({ epochs, epochsLoading, epochsError }: Props
         {/* PoVW Reward Rate chart */}
         <div className="bg-[#111827] rounded-lg p-3 sm:p-4 border border-gray-800">
           <h3 className="text-gray-200 text-sm font-semibold mb-3">
-            PoVW Reward Rate (ZKC/MHz)
+            PoVW Reward Rate
           </h3>
           <ResponsiveContainer width="100%" height={260}>
             <AreaChart data={merged} margin={{ left: 0, right: 10, top: 5, bottom: 5 }}>
@@ -412,24 +415,50 @@ export default function PovwCycles({ epochs, epochsLoading, epochsError }: Props
                 tickLine={false}
               />
               <YAxis
+                yAxisId="zkc"
                 tick={{ fill: '#9ca3af', fontSize: 9 }}
                 axisLine={false}
                 tickLine={false}
                 width={60}
                 tickFormatter={(v) => v.toFixed(5)}
               />
+              <YAxis
+                yAxisId="usd"
+                orientation="right"
+                tick={{ fill: '#9ca3af', fontSize: 9 }}
+                axisLine={false}
+                tickLine={false}
+                width={60}
+                tickFormatter={(v) => `$${v.toFixed(5)}`}
+              />
               <Tooltip
-                formatter={(v: unknown) => [`${Number(v).toFixed(5)} ZKC/MHz`, 'Reward Rate']}
+                formatter={(v: unknown, name: unknown) => {
+                  const n = Number(v);
+                  if (String(name).includes('USD')) return [`$${n.toFixed(5)}/MHz`, String(name)];
+                  return [`${n.toFixed(5)} ZKC/MHz`, String(name)];
+                }}
                 labelFormatter={(label) => `Epoch ${label}`}
                 {...tooltipStyle}
               />
+              <Legend wrapperStyle={{ fontSize: 12, color: '#9ca3af' }} />
               <Area
+                yAxisId="zkc"
                 type="monotone"
                 dataKey="povwRate"
-                name="PoVW Rate"
+                name="Reward Rate (ZKC/MHz)"
                 stroke="#22d3ee"
                 fill="#22d3ee"
                 fillOpacity={0.25}
+                strokeWidth={2}
+              />
+              <Area
+                yAxisId="usd"
+                type="monotone"
+                dataKey="povwRateUSD"
+                name="Reward Rate (USD/MHz)"
+                stroke="#f59e0b"
+                fill="#f59e0b"
+                fillOpacity={0.15}
                 strokeWidth={2}
               />
             </AreaChart>
