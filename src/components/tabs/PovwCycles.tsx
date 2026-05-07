@@ -110,11 +110,11 @@ export default function PovwCycles({ epochs, epochsLoading, epochsError }: Props
   const merged = mergedAll.length > 100 ? mergedAll.slice(-100) : mergedAll;
   const latest = merged.length > 0 ? merged[merged.length - 1] : null;
   const overviewStats = useMemo(() => {
-    if (merged.length === 0) return { totalGrindingRewardsUSD: 0, avgPctMarket: 0 };
-    const totalGrindingRewardsUSD = merged.reduce((s, e) => s + e.grindingRewardsUSD, 0);
-    const avgPctMarket = merged.reduce((s, e) => s + e.pctMarket, 0) / merged.length;
+    if (mergedAll.length === 0) return { totalGrindingRewardsUSD: 0, avgPctMarket: 0 };
+    const totalGrindingRewardsUSD = mergedAll.reduce((s, e) => s + e.grindingRewardsUSD, 0);
+    const avgPctMarket = mergedAll.reduce((s, e) => s + e.pctMarket, 0) / mergedAll.length;
     return { totalGrindingRewardsUSD, avgPctMarket };
-  }, [merged]);
+  }, [mergedAll]);
 
   if (loading && !hasData) {
     return (
@@ -149,7 +149,7 @@ export default function PovwCycles({ epochs, epochsLoading, epochsError }: Props
       {/* Overview stats */}
       <div className="grid grid-cols-2 sm:grid-cols-2 gap-3 mb-4">
         <div className="bg-[#111827] rounded-lg p-3 border border-gray-800">
-          <p className="text-gray-500 text-xs mb-1">Total Grinding Rewards<TooltipIcon text="Sum of all grinding rewards in USD across the last 100 epochs" /></p>
+          <p className="text-gray-500 text-xs mb-1">Total Grinding Rewards<TooltipIcon text="Sum of all grinding rewards in USD across all available epochs" /></p>
           <p className="text-amber-400 text-lg font-semibold">
             {overviewStats.totalGrindingRewardsUSD.toLocaleString('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 })}
           </p>
