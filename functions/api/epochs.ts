@@ -41,6 +41,7 @@ export interface EpochData {
   zkc_price_usd: number;
   total_cycles: number;     // raw cycles as number
   mining_rewards_zkc: number;
+  miner_count: number;      // num_participants from upstream
 }
 
 const UPSTREAM = 'https://explorer.boundless.network/api/base/mining';
@@ -144,6 +145,7 @@ function normaliseEntries(
       total_cycles: Number(BigInt(e.total_work)),
       // total_capped_rewards is 1e18-scaled ZKC
       mining_rewards_zkc: Number(BigInt(e.total_capped_rewards)) / 1e18,
+      miner_count: e.num_participants,
     };
   });
 }

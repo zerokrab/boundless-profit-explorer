@@ -12,6 +12,7 @@ export interface EpochData {
   zkc_price_usd: number;
   total_cycles: number;
   mining_rewards_zkc: number;
+  miner_count: number;
 }
 
 export function computePovwRate(epochs: EpochData[], lookback: number = 10): number {

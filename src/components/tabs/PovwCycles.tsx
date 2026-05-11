@@ -88,6 +88,8 @@ export default function PovwCycles({ epochs, epochsLoading, epochsError }: Props
   const [marketStats, setMarketStats] = useState<MarketStatsBucket[]>([]);
   const [statsLoading, setStatsLoading] = useState(true);
   const [statsError, setStatsError] = useState<string | null>(null);
+  const [activeProvers, setActiveProvers] = useState<number | null>(null);
+  const [proversLoading, setProversLoading] = useState(true);
 
   useEffect(() => {
     const load = async () => {
@@ -107,11 +109,30 @@ export default function PovwCycles({ epochs, epochsLoading, epochsError }: Props
     load();
   }, []);
 
-  const loading = epochsLoading || statsLoading;
+  useEffect(() => {
+    const load = async () => {
+      setProversLoading(true);
+      try {
+        const res = await fetch('/api/provers-count');
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const data: { active_provers: number } = await res.json();
+        setActiveProvers(data.active_provers);
+      } catch {
+        setActiveProvers(null);
+      } finally {
+        setProversLoading(false);
+      }
+    };
+    load();
+  }, []);
+
+  const loading = epochsLoading || statsLoading || proversLoading;
   const hasData = epochs.length > 0 || marketStats.length > 0;
   const mergedAll = useMemo(() => mergeEpochData(epochs, marketStats), [epochs, marketStats]);
   const merged = mergedAll.length > 100 ? mergedAll.slice(-100) : mergedAll;
   const latest = merged.length > 0 ? merged[merged.length - 1] : null;
+  // The most recently completed epoch's miner count (epochs are sorted descending by epoch, index 0 is latest)
+  const latestMinerCount = epochs.length > 0 ? (epochs[0]?.miner_count ?? null) : null;
   const overviewStats = useMemo(() => {
     if (mergedAll.length === 0) return { totalGrindingRewardsUSD: 0, avgPctMarket: 0 };
     const totalGrindingRewardsUSD = mergedAll.reduce((s, e) => s + e.grindingRewardsUSD, 0);
@@ -168,7 +189,7 @@ export default function PovwCycles({ epochs, epochsLoading, epochsError }: Props
       {/* Latest Epoch stats */}
       <div className="border border-gray-700 rounded-lg p-3 mb-6">
         <p className="text-gray-400 text-xs font-semibold uppercase tracking-wider mb-3">Latest Epoch</p>
-        <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-7 gap-3">
           {latest && (
             <div className="bg-[#111827] rounded-lg p-3 border border-gray-800">
               <p className="text-gray-500 text-xs mb-1">Epoch</p>
@@ -203,6 +224,18 @@ export default function PovwCycles({ epochs, epochsLoading, epochsError }: Props
                 <p className="text-gray-500 text-xs mb-1">% Market<TooltipIcon text="Percent of PoVW cycles that are market orders" /></p>
                 <p className="text-amber-400 text-lg font-semibold">
                   {latest.pctMarket.toFixed(1)}%
+                </p>
+              </div>
+              <div className="bg-[#111827] rounded-lg p-3 border border-gray-800">
+                <p className="text-gray-500 text-xs mb-1">Active Provers<TooltipIcon text="Number of provers active on the market in the last 24 hours" /></p>
+                <p className="text-green-400 text-lg font-semibold">
+                  {activeProvers ?? '—'}
+                </p>
+              </div>
+              <div className="bg-[#111827] rounded-lg p-3 border border-gray-800">
+                <p className="text-gray-500 text-xs mb-1">Miner Count<TooltipIcon text="Number of unique miners in the latest finalized epoch" /></p>
+                <p className="text-blue-400 text-lg font-semibold">
+                  {latestMinerCount ?? '—'}
                 </p>
               </div>
             </>

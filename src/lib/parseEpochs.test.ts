@@ -4,9 +4,9 @@ import { computePovwRate, type EpochData } from './parseEpochs';
 describe('computePovwRate', () => {
   it('should include the most recent epoch in the calculation', () => {
     const mockEpochs: EpochData[] = [
-      { epoch: 100, timestamp: '', zkc_price_usd: 0, total_cycles: 1000000, mining_rewards_zkc: 10 },
-      { epoch: 99, timestamp: '', zkc_price_usd: 0, total_cycles: 1000000, mining_rewards_zkc: 5 },
-      { epoch: 98, timestamp: '', zkc_price_usd: 0, total_cycles: 1000000, mining_rewards_zkc: 5 },
+      { epoch: 100, timestamp: '', zkc_price_usd: 0, total_cycles: 1000000, mining_rewards_zkc: 10, miner_count: 5 },
+      { epoch: 99, timestamp: '', zkc_price_usd: 0, total_cycles: 1000000, mining_rewards_zkc: 5, miner_count: 4 },
+      { epoch: 98, timestamp: '', zkc_price_usd: 0, total_cycles: 1000000, mining_rewards_zkc: 5, miner_count: 3 },
     ];
 
     // Lookback of 2 should take epochs 100 and 99.
@@ -19,10 +19,10 @@ describe('computePovwRate', () => {
 
   it('should use exactly `lookback` number of most recent epochs', () => {
     const mockEpochs: EpochData[] = [
-      { epoch: 100, timestamp: '', zkc_price_usd: 0, total_cycles: 1000000, mining_rewards_zkc: 20 },
-      { epoch: 99, timestamp: '', zkc_price_usd: 0, total_cycles: 1000000, mining_rewards_zkc: 10 },
-      { epoch: 98, timestamp: '', zkc_price_usd: 0, total_cycles: 1000000, mining_rewards_zkc: 5 },
-      { epoch: 97, timestamp: '', zkc_price_usd: 0, total_cycles: 1000000, mining_rewards_zkc: 1 },
+      { epoch: 100, timestamp: '', zkc_price_usd: 0, total_cycles: 1000000, mining_rewards_zkc: 20, miner_count: 6 },
+      { epoch: 99, timestamp: '', zkc_price_usd: 0, total_cycles: 1000000, mining_rewards_zkc: 10, miner_count: 5 },
+      { epoch: 98, timestamp: '', zkc_price_usd: 0, total_cycles: 1000000, mining_rewards_zkc: 5, miner_count: 4 },
+      { epoch: 97, timestamp: '', zkc_price_usd: 0, total_cycles: 1000000, mining_rewards_zkc: 1, miner_count: 3 },
     ];
 
     // Lookback of 3 → epochs 100, 99, 98 → rates (20, 10, 5) → mean = 11.667
@@ -37,6 +37,7 @@ describe('computePovwRate', () => {
       zkc_price_usd: 0,
       total_cycles: 1000000,
       mining_rewards_zkc: 10,
+      miner_count: 5,
     }));
 
     // Default lookback should take top 10
