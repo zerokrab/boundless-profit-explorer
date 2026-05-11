@@ -33,6 +33,8 @@ interface EpochPoint {
   povwRateUSD: number;        // USD per MHz per epoch (povwRate * zkc_price_usd)
   grindingRewardsZKC: number; // mining_rewards * (1 - pctMarket/100) in K ZKC
   grindingRewardsUSD: number; // grindingRewardsZKC * zkc_price_usd
+  minerCount: number;         // unique miners per epoch (from /api/epochs)
+  proverCount: number;        // active provers (currently a single current value from /api/provers-count)
 }
 
 const fmtCycles = (v: number) => {
@@ -50,6 +52,7 @@ const T = 1e12;
 function mergeEpochData(
   epochs: EpochData[],
   marketStats: MarketStatsBucket[],
+  activeProvers: number | null,
 ): EpochPoint[] {
   const marketByEpoch = new Map<number, MarketStatsBucket>();
   for (const ms of marketStats) {
@@ -80,6 +83,8 @@ function mergeEpochData(
         povwRateUSD: parseFloat(povwRateUSD.toFixed(5)),
         grindingRewardsZKC: parseFloat((grindingRewardsZKC / 1000).toFixed(2)),
         grindingRewardsUSD: parseFloat(grindingRewardsUSD.toFixed(2)),
+        minerCount: e.miner_count ?? 0,
+        proverCount: activeProvers ?? 0,
       };
     });
 }
@@ -128,7 +133,7 @@ export default function PovwCycles({ epochs, epochsLoading, epochsError }: Props
 
   const loading = epochsLoading || statsLoading || proversLoading;
   const hasData = epochs.length > 0 || marketStats.length > 0;
-  const mergedAll = useMemo(() => mergeEpochData(epochs, marketStats), [epochs, marketStats]);
+  const mergedAll = useMemo(() => mergeEpochData(epochs, marketStats, activeProvers), [epochs, marketStats, activeProvers]);
   const merged = mergedAll.length > 100 ? mergedAll.slice(-100) : mergedAll;
   const latest = merged.length > 0 ? merged[merged.length - 1] : null;
   // The most recently completed epoch's miner count (epochs are sorted descending by epoch, index 0 is latest)
@@ -497,6 +502,91 @@ export default function PovwCycles({ epochs, epochsLoading, epochsError }: Props
             </AreaChart>
           </ResponsiveContainer>
         </div>
+
+        {/* Miner Count per Epoch */}
+        {merged.length > 0 && (
+          <div className="bg-[#111827] rounded-lg p-3 sm:p-4 border border-gray-800">
+            <h3 className="text-gray-200 text-sm font-semibold mb-3">
+              Miner Count per Epoch
+            </h3>
+            <ResponsiveContainer width="100%" height={260}>
+              <AreaChart data={merged} margin={{ left: 0, right: 10, top: 5, bottom: 5 }}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#1f2937" />
+                <XAxis
+                  dataKey="epoch"
+                  tick={{ fill: '#9ca3af', fontSize: 9 }}
+                  axisLine={{ stroke: '#374151' }}
+                  tickLine={false}
+                />
+                <YAxis
+                  allowDecimals={false}
+                  tick={{ fill: '#9ca3af', fontSize: 9 }}
+                  axisLine={false}
+                  tickLine={false}
+                  width={40}
+                />
+                <Tooltip
+                  formatter={(v: unknown) => [Number(v), 'Miners']}
+                  labelFormatter={(label) => `Epoch ${label}`}
+                  {...tooltipStyle}
+                />
+                <Area
+                  type="monotone"
+                  dataKey="minerCount"
+                  name="Miner Count"
+                  stroke="#3b82f6"
+                  fill="#3b82f6"
+                  fillOpacity={0.25}
+                  strokeWidth={2}
+                />
+              </AreaChart>
+            </ResponsiveContainer>
+          </div>
+        )}
+
+        {/* Active Provers per Epoch */}
+        {merged.length > 0 && (
+          <div className="bg-[#111827] rounded-lg p-3 sm:p-4 border border-gray-800">
+            <h3 className="text-gray-200 text-sm font-semibold mb-3">
+              Active Provers per Epoch
+            </h3>
+            <p className="text-gray-500 text-xs mb-2">
+              Currently shows the latest active prover count across all epochs (historical per-epoch data not yet available).
+            </p>
+            <ResponsiveContainer width="100%" height={240}>
+              <AreaChart data={merged} margin={{ left: 0, right: 10, top: 5, bottom: 5 }}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#1f2937" />
+                <XAxis
+                  dataKey="epoch"
+                  tick={{ fill: '#9ca3af', fontSize: 9 }}
+                  axisLine={{ stroke: '#374151' }}
+                  tickLine={false}
+                />
+                <YAxis
+                  allowDecimals={false}
+                  tick={{ fill: '#9ca3af', fontSize: 9 }}
+                  axisLine={false}
+                  tickLine={false}
+                  width={40}
+                />
+                <Tooltip
+                  formatter={(v: unknown) => [Number(v), 'Provers']}
+                  labelFormatter={(label) => `Epoch ${label}`}
+                  {...tooltipStyle}
+                />
+                <Area
+                  type="monotone"
+                  dataKey="proverCount"
+                  name="Prover Count"
+                  stroke="#22c55e"
+                  fill="#22c55e"
+                  fillOpacity={0.25}
+                  strokeWidth={2}
+                />
+              </AreaChart>
+            </ResponsiveContainer>
+          </div>
+        )}
       </div>
 
     </div>
