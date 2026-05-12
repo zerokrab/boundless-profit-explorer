@@ -256,13 +256,13 @@ export default function Stats({ epochs, epochsLoading, epochsError }: Props) {
       {/* Overview stats */}
       <div className="grid grid-cols-2 sm:grid-cols-2 gap-3 mb-4">
         <div className="bg-[#111827] rounded-lg p-3 border border-gray-800">
-          <p className="text-gray-500 text-xs mb-1">Total Non-Market Rewards<TooltipIcon text="PoVW rewards paid to miners for cycles outside the market, in USD across all available epochs" /></p>
+          <p className="text-gray-500 text-xs mb-1">Total Non-Market Rewards<TooltipIcon text="PoVW rewards paid to miners for cycles outside the market, in USD across all epochs." /></p>
           <p className="text-amber-400 text-lg font-semibold">
             {overviewStats.totalGrindingRewardsUSD.toLocaleString('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 })}
           </p>
         </div>
         <div className="bg-[#111827] rounded-lg p-3 border border-gray-800">
-          <p className="text-gray-500 text-xs mb-1">Average % Market Cycles (All time)<TooltipIcon text="Percent of PoVW cycles that are from market orders, averaged across all available epochs." /></p>
+          <p className="text-gray-500 text-xs mb-1">Average % Market Cycles<TooltipIcon text="Percent of PoVW cycles that are from market orders, averaged across all epochs." /></p>
           <p className="text-amber-300 text-lg font-semibold">
             {overviewStats.avgPctMarket.toFixed(1)}%
           </p>
