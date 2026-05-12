@@ -258,13 +258,13 @@ export default function PovwCycles({ epochs, epochsLoading, epochsError }: Props
                 </p>
               </div>
               <div className="bg-[#111827] rounded-lg p-3 border border-gray-800">
-                <p className="text-gray-500 text-xs mb-1">Active Provers<TooltipIcon text="Number of provers active on the market in the last 24 hours" /></p>
+                <p className="text-gray-500 text-xs mb-1">Active Provers<TooltipIcon text="Number of provers active on the market in the last epoch" /></p>
                 <p className="text-green-400 text-lg font-semibold">
                   {activeProvers ?? '—'}
                 </p>
               </div>
               <div className="bg-[#111827] rounded-lg p-3 border border-gray-800">
-                <p className="text-gray-500 text-xs mb-1">Miner Count<TooltipIcon text="Number of unique miners in the latest finalized epoch" /></p>
+                <p className="text-gray-500 text-xs mb-1">Miner Count<TooltipIcon text="Number of unique miners claiming PoVW in the latest finalized epoch" /></p>
                 <p className="text-blue-400 text-lg font-semibold">
                   {latestMinerCount ?? '—'}
                 </p>
@@ -533,8 +533,8 @@ export default function PovwCycles({ epochs, epochsLoading, epochsError }: Props
         {merged.length > 0 && (merged.some(e => e.minerCount > 0) || merged.some(e => e.activeProvers > 0)) && (
           <div className="bg-[#111827] rounded-lg p-3 sm:p-4 border border-gray-800">
             <h3 className="text-gray-200 text-sm font-semibold mb-3">
-              Miner & Prover Count per Epoch
-              <TooltipIcon text="Number of unique miners (PoVW) and active provers (market) per epoch" />
+              Miner & Prover Count
+              <TooltipIcon text="Number of unique miners (PoVW) and provers (market) per epoch" />
             </h3>
             <ResponsiveContainer width="100%" height={260}>
               <AreaChart data={merged} margin={{ left: 0, right: 10, top: 5, bottom: 5 }}>
@@ -562,7 +562,7 @@ export default function PovwCycles({ epochs, epochsLoading, epochsError }: Props
                   <Area
                     type="monotone"
                     dataKey="minerCount"
-                    name="Miner Count"
+                    name="Miners"
                     stroke="#3b82f6"
                     fill="#3b82f6"
                     fillOpacity={0.25}
@@ -573,7 +573,7 @@ export default function PovwCycles({ epochs, epochsLoading, epochsError }: Props
                   <Area
                     type="monotone"
                     dataKey="activeProvers"
-                    name="Active Provers"
+                    name="Provers"
                     stroke="#22c55e"
                     fill="#22c55e"
                     fillOpacity={0.25}
