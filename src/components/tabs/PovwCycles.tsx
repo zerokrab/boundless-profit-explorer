@@ -529,12 +529,12 @@ export default function PovwCycles({ epochs, epochsLoading, epochsError }: Props
           </ResponsiveContainer>
         </div>
 
-        {/* Miner Count over time */}
-        {merged.length > 0 && merged.some(e => e.minerCount > 0) && (
+        {/* Miner Count and Active Provers over time */}
+        {merged.length > 0 && (merged.some(e => e.minerCount > 0) || merged.some(e => e.activeProvers > 0)) && (
           <div className="bg-[#111827] rounded-lg p-3 sm:p-4 border border-gray-800">
             <h3 className="text-gray-200 text-sm font-semibold mb-3">
-              Miner Count per Epoch
-              <TooltipIcon text="Number of unique miners submitting PoVW work in each epoch" />
+              Miner & Prover Count per Epoch
+              <TooltipIcon text="Number of unique miners (PoVW) and active provers (market) per epoch" />
             </h3>
             <ResponsiveContainer width="100%" height={260}>
               <AreaChart data={merged} margin={{ left: 0, right: 10, top: 5, bottom: 5 }}>
@@ -557,57 +557,29 @@ export default function PovwCycles({ epochs, epochsLoading, epochsError }: Props
                   labelFormatter={(label) => `Epoch ${label}`}
                   {...tooltipStyle}
                 />
-                <Area
-                  type="monotone"
-                  dataKey="minerCount"
-                  name="Miner Count"
-                  stroke="#3b82f6"
-                  fill="#3b82f6"
-                  fillOpacity={0.25}
-                  strokeWidth={2}
-                />
-              </AreaChart>
-            </ResponsiveContainer>
-          </div>
-        )}
-
-        {/* Active Prover Count over time */}
-        {merged.length > 0 && merged.some(e => e.activeProvers > 0) && (
-          <div className="bg-[#111827] rounded-lg p-3 sm:p-4 border border-gray-800">
-            <h3 className="text-gray-200 text-sm font-semibold mb-3">
-              Active Provers per Epoch
-              <TooltipIcon text="Average number of provers active on the market, per epoch (2-day average)" />
-            </h3>
-            <ResponsiveContainer width="100%" height={260}>
-              <AreaChart data={merged} margin={{ left: 0, right: 10, top: 5, bottom: 5 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#1f2937" />
-                <XAxis
-                  dataKey="epoch"
-                  tick={{ fill: '#9ca3af', fontSize: 9 }}
-                  axisLine={{ stroke: '#374151' }}
-                  tickLine={false}
-                />
-                <YAxis
-                  domain={[0, 'auto']}
-                  tick={{ fill: '#9ca3af', fontSize: 9 }}
-                  axisLine={false}
-                  tickLine={false}
-                  width={40}
-                />
-                <Tooltip
-                  formatter={(v: unknown, name: unknown) => [Number(v).toFixed(1), String(name)]}
-                  labelFormatter={(label) => `Epoch ${label}`}
-                  {...tooltipStyle}
-                />
-                <Area
-                  type="monotone"
-                  dataKey="activeProvers"
-                  name="Active Provers"
-                  stroke="#22c55e"
-                  fill="#22c55e"
-                  fillOpacity={0.25}
-                  strokeWidth={2}
-                />
+                <Legend wrapperStyle={{ fontSize: 12, color: '#9ca3af' }} />
+                {merged.some(e => e.minerCount > 0) && (
+                  <Area
+                    type="monotone"
+                    dataKey="minerCount"
+                    name="Miner Count"
+                    stroke="#3b82f6"
+                    fill="#3b82f6"
+                    fillOpacity={0.25}
+                    strokeWidth={2}
+                  />
+                )}
+                {merged.some(e => e.activeProvers > 0) && (
+                  <Area
+                    type="monotone"
+                    dataKey="activeProvers"
+                    name="Active Provers"
+                    stroke="#22c55e"
+                    fill="#22c55e"
+                    fillOpacity={0.25}
+                    strokeWidth={2}
+                  />
+                )}
               </AreaChart>
             </ResponsiveContainer>
           </div>

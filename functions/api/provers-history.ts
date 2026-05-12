@@ -1,21 +1,16 @@
 /**
  * GET /api/provers-history
  *
- * Returns historical active prover counts mapped to epochs.
+ * Returns historical unique prover counts mapped to epochs.
+ *
+ * Data source: https://explorer.boundless.network/base/stats (RSC flight data)
+ * Uses the `unique_provers_locking_requests` field from each daily bucket.
  *
  * Strategy:
- *   - Every invocation fetches the current prover count from the upstream API
- *     and appends/updates a daily snapshot in KV (key: "provers-history-daily").
- *   - Daily snapshots are permanent (no TTL) — historical data is immutable,
- *     only today's snapshot gets updated.
- *   - The final per-epoch result is cached for 2 hours in KV
- *     (key: "provers-history").
- *   - When upstream is unavailable, gracefully degrades to stale cached data.
- *
- * Epoch mapping:
- *   Each epoch spans ~2 days. We average the daily prover counts that fall
- *   within each epoch's time window. Epoch timestamps come from the cached
- *   epochs data.
+ *   - Fetches daily stats from the explorer's RSC endpoint
+ *   - Groups by epoch_number_start (each epoch spans ~2 days)
+ *   - Returns per-epoch unique prover counts
+ *   - Cached in KV for 2 hours
  *
  * KV binding: EPOCHS_CACHE
  */
@@ -24,131 +19,153 @@ interface Env {
   EPOCHS_CACHE: KVNamespace;
 }
 
+/** Raw daily bucket from the explorer's RSC payload. */
+interface StatsBucket {
+  timestamp: number;
+  timestamp_iso: string;
+  epoch_number_start: number | null;
+  unique_provers_locking_requests: number;
+}
+
+/** Per-epoch prover history returned to the frontend. */
 interface ProversHistoryBucket {
   epoch: number;
   activeProvers: number;
 }
 
-/** Daily snapshot stored in KV */
-interface DailySnapshot {
-  date: string; // YYYY-MM-DD
-  active_provers: number;
+const UPSTREAM = 'https://explorer.boundless.network/base/stats';
+const CACHE_KEY = 'provers-history';
+const CACHE_TTL_SECONDS = 7200; // 2 hours
+
+/**
+ * Extract the JSON array from the RSC flight-data payload.
+ * The payload is a mix of React flight instructions and embedded JSON.
+ * We grep for the array that starts with {"chain_id": and parse it.
+ */
+function extractStatsArray(rscText: string): StatsBucket[] {
+  const startMarker = '[{"chain_id":';
+  const startIdx = rscText.indexOf(startMarker);
+  if (startIdx === -1) {
+    throw new Error('Could not find stats JSON array in RSC payload');
+  }
+
+  // Walk forward to find the matching closing bracket
+  let depth = 0;
+  let endIdx = -1;
+  for (let i = startIdx; i < rscText.length; i++) {
+    if (rscText[i] === '[') depth++;
+    else if (rscText[i] === ']') depth--;
+    if (depth === 0) {
+      endIdx = i + 1;
+      break;
+    }
+  }
+
+  if (endIdx === -1) {
+    throw new Error('Could not find end of stats JSON array');
+  }
+
+  const jsonStr = rscText.slice(startIdx, endIdx);
+  // Handle RSC date references like \"$D2025-12-01T00:00:00.000Z\"
+  // by stripping the $D prefix — these appear inside timestamp_iso fields
+  const cleaned = jsonStr.replace(/"\$D([^"]+)"/g, '"$1"');
+
+  return JSON.parse(cleaned) as StatsBucket[];
 }
 
-interface EpochData {
-  epoch: number;
-  timestamp: string;
-}
+/**
+ * Group daily buckets by epoch_number_start and sum unique_provers_locking_requests.
+ * Since each day has its own count, we take the max (not sum) for each epoch
+ * to avoid double-counting the same provers across multiple days.
+ */
+function groupByEpoch(buckets: StatsBucket[]): ProversHistoryBucket[] {
+  // Filter out buckets without an epoch number or with zero provers
+  const valid = buckets.filter(
+    b => b.epoch_number_start !== null && b.unique_provers_locking_requests > 0
+  );
 
-const UPSTREAM = 'https://explorer.boundless.network/api/base/provers/summary/1d';
-const RESULT_CACHE_KEY = 'provers-history';
-const DAILY_SNAPSHOTS_KEY = 'provers-history-daily';
-const EPOCHS_CACHE_KEY = 'epochs';
-const RESULT_CACHE_TTL = 7200; // 2 hours
+  // Group by epoch — take the max unique provers across days in each epoch
+  const grouped = new Map<number, number>();
 
-function toDateKey(isoString: string): string {
-  return isoString.slice(0, 10);
+  for (const b of valid) {
+    const epoch = b.epoch_number_start!;
+    const existing = grouped.get(epoch);
+    if (existing === undefined || b.unique_provers_locking_requests > existing) {
+      grouped.set(epoch, b.unique_provers_locking_requests);
+    }
+  }
+
+  // Sort by epoch ascending and exclude the latest (in-progress) epoch
+  const epochs = [...grouped.entries()]
+    .sort((a, b) => a[0] - b[0]);
+
+  // The last epoch may still be in-progress — exclude it
+  const completed = epochs.slice(0, -1);
+
+  return completed.map(([epoch, provers]) => ({
+    epoch,
+    activeProvers: provers,
+  }));
 }
 
 export const onRequestGet: PagesFunction<Env> = async ({ env }) => {
-  // 1. Try to fetch current prover count and update daily snapshot
-  let currentCount: number | null = null;
-  try {
-    const upstream = await fetch(UPSTREAM);
-    if (upstream.ok) {
-      const provers = await upstream.json<unknown[]>();
-      currentCount = provers.length;
-    }
-  } catch {
-    // Upstream unavailable — we'll still try to serve from history
-  }
-
-  // 2. Update daily snapshots in KV
-  if (currentCount !== null) {
-    const todayKey = toDateKey(new Date().toISOString());
-    const historyRaw = await env.EPOCHS_CACHE.get(DAILY_SNAPSHOTS_KEY);
-    const snapshots: DailySnapshot[] = historyRaw ? JSON.parse(historyRaw) : [];
-
-    const existingIdx = snapshots.findIndex(s => s.date === todayKey);
-    if (existingIdx >= 0) {
-      snapshots[existingIdx].active_provers = currentCount;
-    } else {
-      snapshots.push({ date: todayKey, active_provers: currentCount });
-    }
-
-    // Sort by date ascending, save (no TTL — historical snapshots are permanent)
-    snapshots.sort((a, b) => a.date.localeCompare(b.date));
-    await env.EPOCHS_CACHE.put(DAILY_SNAPSHOTS_KEY, JSON.stringify(snapshots));
-  }
-
-  // 3. Try to return the cached result (2h TTL) if upstream was successful
-  //    (we just updated snapshots, so a fresh result will be computed in MISS path)
-  if (currentCount !== null) {
-    const cached = await env.EPOCHS_CACHE.get(RESULT_CACHE_KEY);
-    if (cached) {
-      // Verify the cached result isn't stale by re-computing
-      // Actually, simpler: just serve cached if available on MISS path below
-    }
-  }
-
-  // 4. Compute per-epoch prover history from daily snapshots
-  const historyRaw = await env.EPOCHS_CACHE.get(DAILY_SNAPSHOTS_KEY);
-  const snapshots: DailySnapshot[] = historyRaw ? JSON.parse(historyRaw) : [];
-
-  if (snapshots.length === 0 && currentCount === null) {
-    // No data at all — return empty array
-    return new Response('[]', {
+  // 1. Try KV cache first
+  const cached = await env.EPOCHS_CACHE.get(CACHE_KEY);
+  if (cached) {
+    return new Response(cached, {
       headers: {
         'Content-Type': 'application/json',
-        'X-Cache': 'MISS',
-        'Cache-Control': 'no-store',
+        'X-Cache': 'HIT',
+        'Cache-Control': `public, max-age=${CACHE_TTL_SECONDS}`,
       },
     });
   }
 
-  // Load epoch timestamps from KV cache
-  const epochsRaw = await env.EPOCHS_CACHE.get(EPOCHS_CACHE_KEY);
-  const epochs: EpochData[] = epochsRaw ? JSON.parse(epochsRaw) : [];
+  // 2. Fetch fresh data from upstream RSC endpoint
+  try {
+    const upstream = await fetch(UPSTREAM, {
+      headers: {
+        'RSC': '1',
+        'Accept': 'text/x-component',
+      },
+    });
+    if (!upstream.ok) {
+      throw new Error(`Upstream returned ${upstream.status}`);
+    }
+    const rscText = await upstream.text();
+    const raw = extractStatsArray(rscText);
+    const normalised = groupByEpoch(raw);
+    const body = JSON.stringify(normalised);
 
-  // Map epochs to prover counts
-  // Each epoch spans ~2 days starting at epoch.timestamp
-  const result: ProversHistoryBucket[] = [];
+    // 3. Store in KV with TTL
+    await env.EPOCHS_CACHE.put(CACHE_KEY, body, {
+      expirationTtl: CACHE_TTL_SECONDS,
+    });
 
-  for (const epoch of epochs) {
-    const epochStartDate = toDateKey(epoch.timestamp);
-    // Epoch is ~2 days
-    const epochStart = new Date(epoch.timestamp);
-    const epochEnd = new Date(epochStart.getTime() + 2 * 24 * 60 * 60 * 1000);
-    const epochEndDate = toDateKey(epochEnd.toISOString());
-
-    // Find daily snapshots within this epoch's window
-    const epochSnapshots = snapshots.filter(
-      s => s.date >= epochStartDate && s.date <= epochEndDate
-    );
-
-    if (epochSnapshots.length > 0) {
-      const avgProvers =
-        epochSnapshots.reduce((sum, s) => sum + s.active_provers, 0) /
-        epochSnapshots.length;
-      result.push({
-        epoch: epoch.epoch,
-        activeProvers: parseFloat(avgProvers.toFixed(1)),
+    return new Response(body, {
+      headers: {
+        'Content-Type': 'application/json',
+        'X-Cache': 'MISS',
+        'Cache-Control': `public, max-age=${CACHE_TTL_SECONDS}`,
+      },
+    });
+  } catch (err) {
+    // 4. Graceful degradation — return stale KV data if available
+    const stale = await env.EPOCHS_CACHE.get(CACHE_KEY);
+    if (stale) {
+      return new Response(stale, {
+        headers: {
+          'Content-Type': 'application/json',
+          'X-Cache': 'STALE',
+          'Cache-Control': 'no-store',
+        },
       });
     }
+
+    const message = err instanceof Error ? err.message : 'Unknown error';
+    return new Response(JSON.stringify({ error: 'Failed to fetch prover history', detail: message }), {
+      status: 502,
+      headers: { 'Content-Type': 'application/json' },
+    });
   }
-
-  const body = JSON.stringify(result);
-
-  // Cache the result for 2 hours
-  await env.EPOCHS_CACHE.put(RESULT_CACHE_KEY, body, {
-    expirationTtl: RESULT_CACHE_TTL,
-  });
-
-  return new Response(body, {
-    headers: {
-      'Content-Type': 'application/json',
-      'X-Cache': currentCount !== null ? 'MISS' : 'STALE',
-      'Cache-Control': `public, max-age=${RESULT_CACHE_TTL}`,
-    },
-  });
 };
