@@ -99,7 +99,7 @@ function mergeEpochData(
     });
 }
 
-export default function PovwCycles({ epochs, epochsLoading, epochsError }: Props) {
+export default function Stats({ epochs, epochsLoading, epochsError }: Props) {
   const [marketStats, setMarketStats] = useState<MarketStatsBucket[]>([]);
   const [statsLoading, setStatsLoading] = useState(true);
   const [statsError, setStatsError] = useState<string | null>(null);
@@ -190,9 +190,9 @@ export default function PovwCycles({ epochs, epochsLoading, epochsError }: Props
   return (
     <div className="p-3 sm:p-6">
       <div className="mb-4 sm:mb-6">
-        <h2 className="text-gray-100 text-lg font-semibold mb-1">PoVW &amp; Market Cycles</h2>
+        <h2 className="text-gray-100 text-lg font-semibold mb-1">PoVW &amp; Market Stats</h2>
         <p className="text-gray-400 text-sm">
-          Compares cycles performed on the market versus cycles submitted for PoVW mining.
+          Stats from the Boundless market and PoVW mining.
           {(epochsError || statsError) && (
             <span className="text-yellow-500 ml-2" title={epochsError || statsError || ''}>
               ⚠ {epochsError || statsError}
@@ -201,21 +201,6 @@ export default function PovwCycles({ epochs, epochsLoading, epochsError }: Props
         </p>
       </div>
 
-      {/* Overview stats */}
-      <div className="grid grid-cols-2 sm:grid-cols-2 gap-3 mb-4">
-        <div className="bg-[#111827] rounded-lg p-3 border border-gray-800">
-          <p className="text-gray-500 text-xs mb-1">Total Grinding Rewards<TooltipIcon text="Sum of all grinding rewards in USD across all available epochs" /></p>
-          <p className="text-amber-400 text-lg font-semibold">
-            {overviewStats.totalGrindingRewardsUSD.toLocaleString('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 })}
-          </p>
-        </div>
-        <div className="bg-[#111827] rounded-lg p-3 border border-gray-800">
-          <p className="text-gray-500 text-xs mb-1">Average % Market (All time)<TooltipIcon text="Percent of PoVW cycles that are market orders, averaged across all available epochs." /></p>
-          <p className="text-amber-300 text-lg font-semibold">
-            {overviewStats.avgPctMarket.toFixed(1)}%
-          </p>
-        </div>
-      </div>
 
       {/* Latest Epoch stats */}
       <div className="border border-gray-700 rounded-lg p-3 mb-6">
@@ -246,13 +231,7 @@ export default function PovwCycles({ epochs, epochsLoading, epochsError }: Props
                 </p>
               </div>
               <div className="bg-[#111827] rounded-lg p-3 border border-gray-800">
-                <p className="text-gray-500 text-xs mb-1">Total</p>
-                <p className="text-cyan-300 text-lg font-semibold">
-                  {fmtCycles(latest.povwCyclesT + latest.marketCyclesT)}
-                </p>
-              </div>
-              <div className="bg-[#111827] rounded-lg p-3 border border-gray-800">
-                <p className="text-gray-500 text-xs mb-1">% Market<TooltipIcon text="Percent of PoVW cycles that are market orders" /></p>
+                <p className="text-gray-500 text-xs mb-1">% Market<TooltipIcon text="Percent of PoVW cycles that are from market orders" /></p>
                 <p className="text-amber-400 text-lg font-semibold">
                   {latest.pctMarket.toFixed(1)}%
                 </p>
@@ -271,6 +250,22 @@ export default function PovwCycles({ epochs, epochsLoading, epochsError }: Props
               </div>
             </>
           )}
+        </div>
+      </div>
+
+      {/* Overview stats */}
+      <div className="grid grid-cols-2 sm:grid-cols-2 gap-3 mb-4">
+        <div className="bg-[#111827] rounded-lg p-3 border border-gray-800">
+          <p className="text-gray-500 text-xs mb-1">Total Non-Market Rewards<TooltipIcon text="PoVW rewards paid to miners for cycles outside the market, in USD across all available epochs" /></p>
+          <p className="text-amber-400 text-lg font-semibold">
+            {overviewStats.totalGrindingRewardsUSD.toLocaleString('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 })}
+          </p>
+        </div>
+        <div className="bg-[#111827] rounded-lg p-3 border border-gray-800">
+          <p className="text-gray-500 text-xs mb-1">Average % Market Cycles (All time)<TooltipIcon text="Percent of PoVW cycles that are from market orders, averaged across all available epochs." /></p>
+          <p className="text-amber-300 text-lg font-semibold">
+            {overviewStats.avgPctMarket.toFixed(1)}%
+          </p>
         </div>
       </div>
 
@@ -397,11 +392,11 @@ export default function PovwCycles({ epochs, epochsLoading, epochsError }: Props
           </div>
         )}
 
-        {/* Grinding Rewards chart */}
+        {/* Non-Market PoVW Rewards chart */}
         {merged.length > 0 && (
           <div className="bg-[#111827] rounded-lg p-3 sm:p-4 border border-gray-800">
             <h3 className="text-gray-200 text-sm font-semibold mb-3">
-              Grinding Rewards
+              Non-Market PoVW Rewards
             </h3>
             <ResponsiveContainer width="100%" height={260}>
               <AreaChart data={merged} margin={{ left: 0, right: 10, top: 5, bottom: 5 }}>
@@ -443,7 +438,7 @@ export default function PovwCycles({ epochs, epochsLoading, epochsError }: Props
                   yAxisId="zkc"
                   type="monotone"
                   dataKey="grindingRewardsZKC"
-                  name="Grinding Rewards (ZKC)"
+                  name="Rewards (ZKC)"
                   stroke="#22d3ee"
                   fill="#22d3ee"
                   fillOpacity={0.25}
@@ -453,7 +448,7 @@ export default function PovwCycles({ epochs, epochsLoading, epochsError }: Props
                   yAxisId="usd"
                   type="monotone"
                   dataKey="grindingRewardsUSD"
-                  name="Grinding Rewards (USD)"
+                  name="Rewards (USD)"
                   stroke="#f59e0b"
                   fill="#f59e0b"
                   fillOpacity={0.15}

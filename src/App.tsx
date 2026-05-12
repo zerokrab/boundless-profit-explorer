@@ -10,14 +10,14 @@ import ZkcTicker from './components/ZkcTicker';
 import ProfitExplorer from './components/tabs/ProfitExplorer';
 import Breakeven from './components/tabs/Breakeven';
 import Scenarios from './components/tabs/Scenarios';
-import PovwCycles from './components/tabs/PovwCycles';
+import Stats from './components/tabs/Stats.tsx';
 import { Menu } from 'lucide-react';
 
 const DEFAULT_LOOKBACK = 10;
 
 const PAGES: { label: string; path: string }[] = [
   { label: 'Calculator', path: '/' },
-  { label: 'PoVW Cycles', path: '/povw-cycles' },
+  { label: 'Stats', path: '/stats' },
 ];
 
 const CALCULATOR_TABS: { label: string; path: string }[] = [
@@ -60,7 +60,7 @@ export default function App() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
   const location = useLocation();
-  const isCalcPage = location.pathname !== '/povw-cycles';
+  const isCalcPage = location.pathname !== '/stats';
 
   // Fetch epoch data from Pages Function (falls back to bundled JSON in dev)
   useEffect(() => {
@@ -279,12 +279,12 @@ export default function App() {
             <Route path="scenarios" element={<Scenarios results={results} liveZkcPrice={liveZkcPrice} />} />
           </Route>
 
-          {/* PoVW Cycles page — full-width, no sidebar */}
+          {/* Stats page — full-width, no sidebar */}
           <Route
-            path="/povw-cycles"
+            path="/stats"
             element={
               <div className="h-full overflow-auto">
-                <PovwCycles epochs={epochs} epochsLoading={epochsLoading} epochsError={epochsError} />
+                <Stats epochs={epochs} epochsLoading={epochsLoading} epochsError={epochsError} />
               </div>
             }
           />
