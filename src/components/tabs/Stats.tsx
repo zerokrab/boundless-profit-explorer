@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import {
   XAxis, YAxis, CartesianGrid, Tooltip,
-  ResponsiveContainer, BarChart, Bar, Legend, Area, AreaChart,
+  ResponsiveContainer, Legend, Area, AreaChart, LineChart, Line,
 } from 'recharts';
 import type { EpochData } from '../../lib/parseEpochs';
 import TooltipIcon from '../TooltipIcon';
@@ -273,7 +273,8 @@ export default function Stats({ epochs, epochsLoading, epochsError }: Props) {
         {/* PoVW vs Market Cycles per epoch */}
         <div className="bg-[#111827] rounded-lg p-3 sm:p-4 border border-gray-800">
           <h3 className="text-gray-200 text-sm font-semibold mb-3">
-            Cycles per Epoch — Market vs PoVW
+            PoVW Cycle Composition
+            <TooltipIcon text="Shows the portion of PoVW cycles that were from market orders" />
           </h3>
           <ResponsiveContainer width="100%" height={280}>
             <AreaChart data={merged} margin={{ left: 0, right: 10, top: 5, bottom: 5 }}>
@@ -300,7 +301,7 @@ export default function Stats({ epochs, epochsLoading, epochsError }: Props) {
               <Area
                 type="monotone"
                 dataKey="marketCyclesT"
-                name="Market Cycles"
+                name="Total Market Cycles"
                 stroke="#a855f7"
                 fill="#a855f7"
                 fillOpacity={0.35}
@@ -309,7 +310,7 @@ export default function Stats({ epochs, epochsLoading, epochsError }: Props) {
               <Area
                 type="monotone"
                 dataKey="povwCyclesT"
-                name="PoVW Cycles"
+                name="Total PoVW Cycles"
                 stroke="#22d3ee"
                 fill="#22d3ee"
                 fillOpacity={0.35}
@@ -323,6 +324,7 @@ export default function Stats({ epochs, epochsLoading, epochsError }: Props) {
         <div className="bg-[#111827] rounded-lg p-3 sm:p-4 border border-gray-800">
           <h3 className="text-gray-200 text-sm font-semibold mb-3">
             % Market Cycles per Epoch
+            <TooltipIcon text="Percent of total PoVW cycles that were from market orders" />
           </h3>
           <ResponsiveContainer width="100%" height={280}>
             <AreaChart data={merged} margin={{ left: 0, right: 10, top: 5, bottom: 5 }}>
@@ -359,44 +361,13 @@ export default function Stats({ epochs, epochsLoading, epochsError }: Props) {
           </ResponsiveContainer>
         </div>
 
-        {/* Epoch-level PoVW Cycles bar chart */}
-        {merged.length > 0 && (
-          <div className="bg-[#111827] rounded-lg p-3 sm:p-4 border border-gray-800">
-            <h3 className="text-gray-200 text-sm font-semibold mb-3">
-              PoVW Cycles per Epoch
-            </h3>
-            <ResponsiveContainer width="100%" height={260}>
-              <BarChart data={merged} margin={{ left: 0, right: 10, top: 5, bottom: 5 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#1f2937" />
-                <XAxis
-                  dataKey="epoch"
-                  tick={{ fill: '#9ca3af', fontSize: 9 }}
-                  axisLine={{ stroke: '#374151' }}
-                  tickLine={false}
-                />
-                <YAxis
-                  tickFormatter={fmtCycles}
-                  tick={{ fill: '#9ca3af', fontSize: 9 }}
-                  axisLine={false}
-                  tickLine={false}
-                  width={55}
-                />
-                <Tooltip
-                  formatter={(v: unknown, name: unknown) => [fmtCycles(Number(v)), String(name)]}
-                  labelFormatter={(label) => `Epoch ${label}`}
-                  {...tooltipStyle}
-                />
-                <Bar dataKey="povwCyclesT" name="PoVW Cycles" fill="#22d3ee" radius={[2, 2, 0, 0]} />
-              </BarChart>
-            </ResponsiveContainer>
-          </div>
-        )}
 
         {/* Non-Market PoVW Rewards chart */}
         {merged.length > 0 && (
           <div className="bg-[#111827] rounded-lg p-3 sm:p-4 border border-gray-800">
             <h3 className="text-gray-200 text-sm font-semibold mb-3">
-              Non-Market PoVW Rewards
+              Total Non-Market PoVW Rewards Per Epoch
+              <TooltipIcon text="Value of rewards paid for cycles that were not from market orders" />
             </h3>
             <ResponsiveContainer width="100%" height={260}>
               <AreaChart data={merged} margin={{ left: 0, right: 10, top: 5, bottom: 5 }}>
@@ -413,6 +384,7 @@ export default function Stats({ epochs, epochsLoading, epochsError }: Props) {
                   axisLine={false}
                   tickLine={false}
                   width={55}
+                  label={{ value: 'ZKC', angle: -90, position: 'insideLeft', style: { fill: '#9ca3af', fontSize: 10 } }}
                   tickFormatter={(v: number) => `${v.toFixed(0)}K`}
                 />
                 <YAxis
@@ -422,6 +394,7 @@ export default function Stats({ epochs, epochsLoading, epochsError }: Props) {
                   axisLine={false}
                   tickLine={false}
                   width={60}
+                  label={{ value: 'USD', angle: 90, position: 'insideRight', style: { fill: '#9ca3af', fontSize: 10 } }}
                   tickFormatter={(v: number) => `$${v.toFixed(0)}`}
                 />
                 <Tooltip
@@ -438,7 +411,7 @@ export default function Stats({ epochs, epochsLoading, epochsError }: Props) {
                   yAxisId="zkc"
                   type="monotone"
                   dataKey="grindingRewardsZKC"
-                  name="Rewards (ZKC)"
+                  name="ZKC"
                   stroke="#22d3ee"
                   fill="#22d3ee"
                   fillOpacity={0.25}
@@ -448,7 +421,7 @@ export default function Stats({ epochs, epochsLoading, epochsError }: Props) {
                   yAxisId="usd"
                   type="monotone"
                   dataKey="grindingRewardsUSD"
-                  name="Rewards (USD)"
+                  name="USD"
                   stroke="#f59e0b"
                   fill="#f59e0b"
                   fillOpacity={0.15}
@@ -463,6 +436,7 @@ export default function Stats({ epochs, epochsLoading, epochsError }: Props) {
         <div className="bg-[#111827] rounded-lg p-3 sm:p-4 border border-gray-800">
           <h3 className="text-gray-200 text-sm font-semibold mb-3">
             PoVW Reward Rate
+            <TooltipIcon text="Amount paid per million cycles" />
           </h3>
           <ResponsiveContainer width="100%" height={260}>
             <AreaChart data={merged} margin={{ left: 0, right: 10, top: 5, bottom: 5 }}>
@@ -479,6 +453,7 @@ export default function Stats({ epochs, epochsLoading, epochsError }: Props) {
                 axisLine={false}
                 tickLine={false}
                 width={60}
+                label={{ value: 'ZKC/MHz', angle: -90, position: 'insideLeft', style: { fill: '#9ca3af', fontSize: 10 } }}
                 tickFormatter={(v) => v.toFixed(5)}
               />
               <YAxis
@@ -488,6 +463,7 @@ export default function Stats({ epochs, epochsLoading, epochsError }: Props) {
                 axisLine={false}
                 tickLine={false}
                 width={60}
+                label={{ value: 'USD/MHz', angle: 90, position: 'insideRight', style: { fill: '#9ca3af', fontSize: 10 } }}
                 tickFormatter={(v) => `$${v.toFixed(5)}`}
               />
               <Tooltip
@@ -504,7 +480,7 @@ export default function Stats({ epochs, epochsLoading, epochsError }: Props) {
                 yAxisId="zkc"
                 type="monotone"
                 dataKey="povwRate"
-                name="Reward Rate (ZKC/MHz)"
+                name="ZKC/Mil. Cycles"
                 stroke="#22d3ee"
                 fill="#22d3ee"
                 fillOpacity={0.25}
@@ -514,7 +490,7 @@ export default function Stats({ epochs, epochsLoading, epochsError }: Props) {
                 yAxisId="usd"
                 type="monotone"
                 dataKey="povwRateUSD"
-                name="Reward Rate (USD/MHz)"
+                name="USD/Mil. Cycles"
                 stroke="#f59e0b"
                 fill="#f59e0b"
                 fillOpacity={0.15}
@@ -532,7 +508,7 @@ export default function Stats({ epochs, epochsLoading, epochsError }: Props) {
               <TooltipIcon text="Number of unique miners (PoVW) and provers (market) per epoch" />
             </h3>
             <ResponsiveContainer width="100%" height={260}>
-              <AreaChart data={merged} margin={{ left: 0, right: 10, top: 5, bottom: 5 }}>
+              <LineChart data={merged} margin={{ left: 0, right: 10, top: 5, bottom: 5 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#1f2937" />
                 <XAxis
                   dataKey="epoch"
@@ -554,28 +530,26 @@ export default function Stats({ epochs, epochsLoading, epochsError }: Props) {
                 />
                 <Legend wrapperStyle={{ fontSize: 12, color: '#9ca3af' }} />
                 {merged.some(e => e.minerCount > 0) && (
-                  <Area
+                  <Line
                     type="monotone"
                     dataKey="minerCount"
                     name="Miners"
                     stroke="#3b82f6"
-                    fill="#3b82f6"
-                    fillOpacity={0.25}
                     strokeWidth={2}
+                    dot={false}
                   />
                 )}
                 {merged.some(e => e.activeProvers > 0) && (
-                  <Area
+                  <Line
                     type="monotone"
                     dataKey="activeProvers"
                     name="Provers"
                     stroke="#22c55e"
-                    fill="#22c55e"
-                    fillOpacity={0.25}
                     strokeWidth={2}
+                    dot={false}
                   />
                 )}
-              </AreaChart>
+              </LineChart>
             </ResponsiveContainer>
           </div>
         )}
